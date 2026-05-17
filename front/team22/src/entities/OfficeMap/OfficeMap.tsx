@@ -39,8 +39,15 @@ import { getMarker } from "@shared/api/markers";
 import { deleteFurnitureFx } from "@shared/api/Furniture/DeleteFurniture";
 import { getImageUrl } from "@shared/utils/getImageUrl";
 import BookingMarkerForm from "@entities/BookingMarkerForm/BookingMarkerForm";
+import { $user } from "@shared/store/auth";
 
 export default function OfficeMap() {
+  // достаем информацию о правах пользователя через auth
+  const user = useUnit($user);
+
+  const canEdit = user?.role === "ADMIN";
+  const canBook = user?.role === "USER";
+
   // сторы
   // размер изображения
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
@@ -549,19 +556,21 @@ export default function OfficeMap() {
             /> */}
           </div>
         </Fade>
-        <AddFloorButton />
-        <ImportImageEl onChange={handleFileChange} />
-        <Fade
-          in={!!currentFloorImage}
-          timeout={300}
-          mountOnEnter
-          unmountOnExit
-          ref={btnRef}
-        >
-          <div ref={btnRef} className="absolute right-[20px]">
-            <AddingFurnitureButton onClick={() => setPanelOpen(true)} />
-          </div>
-        </Fade>
+        {canEdit && <AddFloorButton />}
+        {canEdit && <ImportImageEl onChange={handleFileChange} />}
+        {canEdit && (
+          <Fade
+            in={!!currentFloorImage}
+            timeout={300}
+            mountOnEnter
+            unmountOnExit
+            ref={btnRef}
+          >
+            <div ref={btnRef} className="absolute right-[20px]">
+              <AddingFurnitureButton onClick={() => setPanelOpen(true)} />
+            </div>
+          </Fade>
+        )}
       </div>
 
       <Fade
@@ -672,19 +681,22 @@ export default function OfficeMap() {
                 activeOfficeId={activeOffice?.startFloor.id}
                 onShowDeleteAlert={onShowDeleteAlert}
                 openBookingForm={() => setIsBookingFormOpen(true)}
+                canEdit={canEdit}
+                canBook={canBook}
               />
             )}
 
-          <div className="absolute top-24 ml-2 z-10 flex flex-col gap-2 bg-[#2F80ED] p-2 rounded shadow w-24">
-            <AddMarkerComponent handleAddMarker={handleAddMarkerFunc} />
-
-            <PositionedMenu
-              open={isOpenedMenuForType}
-              onClose={handleCloseMenu}
-              onSelect={handleSelectType}
-              anchorEl={anchorEl}
-            />
-          </div>
+          {canEdit && (
+            <div className="absolute top-24 ml-2 z-10 flex flex-col gap-2 bg-[#2F80ED] p-2 rounded-xl shadow w-24">
+              <AddMarkerComponent handleAddMarker={handleAddMarkerFunc} />
+              <PositionedMenu
+                open={isOpenedMenuForType}
+                onClose={handleCloseMenu}
+                onSelect={handleSelectType}
+                anchorEl={anchorEl}
+              />
+            </div>
+          )}
 
           <div className="absolute top-50 ml-2 z-10 flex flex-col gap-2 bg-white/80 p-2 rounded shadow w-24">
             <div className="flex flex-col p-2 gap-10 items-center">
@@ -696,34 +708,40 @@ export default function OfficeMap() {
             </div>
           </div>
 
-          <AddingFurniture
-            addFurniture={addFurnitureToMap}
-            onSelectLayer={onSelectLayerFunc}
-            open={panelOpen}
-            setOpen={setPanelOpen}
-            setEditable={setPanelOpen}
-            furnitureOnMap={furnitureOnMap}
-            serverFurnitureIds={serverFurnitureIds}
-            currentFloorId={currentFloor?.id}
-          />
+          {canEdit && (
+            <AddingFurniture
+              addFurniture={addFurnitureToMap}
+              onSelectLayer={onSelectLayerFunc}
+              open={panelOpen}
+              setOpen={setPanelOpen}
+              setEditable={setPanelOpen}
+              furnitureOnMap={furnitureOnMap}
+              serverFurnitureIds={serverFurnitureIds}
+              currentFloorId={currentFloor?.id}
+            />
+          )}
         </div>
       </Fade>
       {/* форма редактирования маркера (название/тип и тд) */}
-      <RedactorMenu
-        isOpen={isRedactorOpen}
-        onClose={() => setIsRedactorOpen(false)}
-        selectedMarker={clickedMarker}
-        onUpdate={async (updatedMarker) => setClickedMarker(updatedMarker)}
-      />
+      {canEdit && (
+        <RedactorMenu
+          isOpen={isRedactorOpen}
+          onClose={() => setIsRedactorOpen(false)}
+          selectedMarker={clickedMarker}
+          onUpdate={async (updatedMarker) => setClickedMarker(updatedMarker)}
+        />
+      )}
       {/* форма бронирования маркера (время\дата) */}
-      <BookingMarkerForm
-        isOpen={isBookingFormOpen}
-        onClose={() => setIsBookingFormOpen(false)}
-        selectedMarker={clickedMarker}
-        onBookingCreated={async () => {
-          console.log("бронь создана, нужно обновить занятость");
-        }}
-      />
+      {canBook && (
+        <BookingMarkerForm
+          isOpen={isBookingFormOpen}
+          onClose={() => setIsBookingFormOpen(false)}
+          selectedMarker={clickedMarker}
+          onBookingCreated={async () => {
+            console.log("бронь создана, нужно обновить занятость");
+          }}
+        />
+      )}
     </div>
   );
 }

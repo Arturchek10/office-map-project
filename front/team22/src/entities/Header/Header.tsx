@@ -90,7 +90,7 @@ export default function Header({ officeName }: HeaderProps) {
             className="font-bold text-white text-3xl cursor-pointer flex items-center gap-2 transition-colors"
             onClick={() => navigate("/")}
           >
-            <T1logo className="w-15 h-15" />
+            {/* <T1logo className="w-15 h-15" /> */}
             Office Map
           </p>
         </div>

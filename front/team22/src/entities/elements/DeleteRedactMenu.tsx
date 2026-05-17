@@ -13,6 +13,8 @@ type PositionMenuProps = {
   activeOfficeId: number;
   onShowDeleteAlert: () => void;
   openBookingForm: () => void;
+  canEdit: boolean;
+  canBook: boolean;
 };
 
 export default function PositionedMenu({
@@ -23,7 +25,9 @@ export default function PositionedMenu({
   selectedMarkerId,
   activeOfficeId,
   onShowDeleteAlert,
-  openBookingForm
+  openBookingForm,
+  canEdit,
+  canBook
 }: PositionMenuProps) {
   const open = Boolean(anchorForCircle);
   const [getFloorById] = useUnit([getFloorByIdFx]);
@@ -40,7 +44,7 @@ export default function PositionedMenu({
         }
         transitionDuration={1000}
       >
-        <MenuItem
+       {canBook && <MenuItem
           onClick={() => {
             onClose(); // закрытие меню выбора
             openBookingForm();
@@ -49,16 +53,16 @@ export default function PositionedMenu({
           }}
         >
         Забронировать
-        </MenuItem>
-        <MenuItem
+        </MenuItem>}
+        {canEdit && <MenuItem
           onClick={() => {
             onClose();
             openRedactor();
           }}
         >
           Редактировать
-        </MenuItem>
-        <MenuItem
+        </MenuItem>}
+        {canEdit && <MenuItem
           onClick={async () => {
             onClose();
             console.log("id выбранного маркера: ", selectedMarkerId);
@@ -73,7 +77,7 @@ export default function PositionedMenu({
           }}
         >
           Удалить
-        </MenuItem>
+        </MenuItem>}
       </Menu>
     </div>
   );
