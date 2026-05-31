@@ -154,9 +154,9 @@ export default function OfficeMap() {
     "anonymous",
   );
 
-  console.log("currentFloor?.photoUrl:", currentFloor?.photoUrl);
-  console.log("floorImageUrl:", floorImageUrl);
-  console.log("imageStatus:", imageStatus);
+  // console.log("currentFloor?.photoUrl:", currentFloor?.photoUrl);
+  // console.log("floorImageUrl:", floorImageUrl);
+  // console.log("imageStatus:", imageStatus);
 
   // загрузка этажа
   const [activeOffice, getFloorById] = useUnit([$activeOffice, getFloorByIdFx]);
@@ -164,8 +164,8 @@ export default function OfficeMap() {
   useEffect(() => {
     if (activeOffice?.startFloor?.id) {
       getFloorById(activeOffice.startFloor.id);
-      console.log("---------------", activeOffice);
-      console.log("получаем этаж с ID:", activeOffice.startFloor.id);
+      // console.log("---------------", activeOffice);
+      // console.log("получаем этаж с ID:", activeOffice.startFloor.id);
     }
   }, [activeOffice?.startFloor?.id, getFloorById]);
 
@@ -180,13 +180,13 @@ export default function OfficeMap() {
   useEffect(() => {
     if (!furnitures) return;
 
-    console.log("Загружена мебель с сервера:", furnitures);
+    // console.log("Загружена мебель с сервера:", furnitures);
 
     const mapped = furnitures.map((f) => {
-      console.log("Обрабатываем мебель:", f);
+      // console.log("Обрабатываем мебель:", f);
 
       if (!f.photoUrl) {
-        console.error("У мебели с сервера отсутствует photoUrl:", f);
+        // console.error("У мебели с сервера отсутствует photoUrl:", f);
       }
 
       return {
@@ -203,18 +203,18 @@ export default function OfficeMap() {
       };
     });
 
-    console.log("Преобразованная мебель:", mapped);
+    // console.log("Преобразованная мебель:", mapped);
     setFurnitureOnMap(mapped);
 
     // Сохраняем ID серверной мебели
     const serverIds = new Set(furnitures.map((f) => f.id));
     setServerFurnitureIds(serverIds);
-    console.log("Сохранены ID серверной мебели:", serverIds);
+    // console.log("Сохранены ID серверной мебели:", serverIds);
   }, [furnitures]);
 
   // Добавление вручную через панель
   const addFurnitureToMap = (item: { name: string; photoUrl: string }) => {
-    console.log("Добавляем мебель на карту:", item);
+    // console.log("Добавляем мебель на карту:", item);
 
     if (!item.photoUrl) {
       console.error("У мебели отсутствует photoUrl:", item);
@@ -257,20 +257,20 @@ export default function OfficeMap() {
   };
 
   const updateFurnitureSize = (id: number, width: number, height: number) => {
-    console.log("Обновляем размеры мебели:", { id, width, height });
+    // console.log("Обновляем размеры мебели:", { id, width, height });
     setFurnitureOnMap((prev) =>
       prev.map((item) => (item.id === id ? { ...item, width, height } : item)),
     );
   };
 
   const updateFurniturePosition = (id: number, x: number, y: number) => {
-    console.log("Обновляем позицию мебели:", { id, x, y });
+    // console.log("Обновляем позицию мебели:", { id, x, y });
 
     // Преобразуем координаты обратно в координаты относительно изображения
     const position_x = (x - startImagePosition.x) / startImageScale;
     const position_y = (y - startImagePosition.y) / startImageScale;
 
-    console.log("Преобразованные координаты:", { position_x, position_y });
+    // console.log("Преобразованные координаты:", { position_x, position_y });
 
     setFurnitureOnMap((prev) =>
       prev.map((item) =>
@@ -396,20 +396,20 @@ export default function OfficeMap() {
     if (!activeOffice?.startFloor?.id) return;
     (async () => {
       const floor = await getFloorById(activeOffice.startFloor.id);
-      console.log("photoUrl:", floor.photoUrl);
+      // console.log("photoUrl:", floor.photoUrl);
     })();
   }, [activeOffice?.startFloor?.id, getFloorById]);
 
   // обновляем размеры, когда картинка загрузилась
 
   useEffect(() => {
-    console.log(imageStatus);
+    // console.log(imageStatus);
     if (imageStatus === "loaded" && currentFloorImage) {
       setImageSize({
         width: currentFloorImage.width,
         height: currentFloorImage.height,
       });
-      console.log("Картинка загрузилась");
+      // console.log("Картинка загрузилась");
       setShowAlertSuccess(true);
       setTimeout(() => setShowAlertSuccess(false), 3000); // убираем через 3 секунды
     }
@@ -442,12 +442,12 @@ export default function OfficeMap() {
     }
 
     if (!currentFloor?.id) return;
-    console.log("currentFloor.id", currentFloor.id);
-    console.log("file", file);
+    // console.log("currentFloor.id", currentFloor.id);
+    // console.log("file", file);
 
     try {
       await updateFloorPlan(currentFloor.id, false, file);
-      console.log("PATCH запрос на изменение этажа выполнен");
+      // console.log("PATCH запрос на изменение этажа выполнен");
 
       // После успешного обновления обновляем локальное изображение
       const reader = new FileReader();
@@ -511,11 +511,11 @@ export default function OfficeMap() {
       try {
         // Проверяем, является ли мебель серверной
         if (serverFurnitureIds.has(selectedFurnitureId)) {
-          console.log("Удаляем серверную мебель:", selectedFurnitureId);
+          // console.log("Удаляем серверную мебель:", selectedFurnitureId);
           // Удаляем с сервера
           await deleteFurnitureFx(selectedFurnitureId);
         } else {
-          console.log("Удаляем локальную мебель:", selectedFurnitureId);
+          // console.log("Удаляем локальную мебель:", selectedFurnitureId);
         }
 
         // Удаляем из локального состояния
@@ -627,7 +627,7 @@ export default function OfficeMap() {
           )}
           {hasImage && imageStatus === "failed" && (
             <>
-              {console.log("ошибка загрузки изображения")}
+              {/* {console.log("ошибка загрузки изображения")} */}
               <div className="absolute flex item-center justify-center z-50 top-[100px] left-1/2 -translate-x-[80px]">
                 <p className="text-5xl">ошибка загрузки изображения</p>
               </div>

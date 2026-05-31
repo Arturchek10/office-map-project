@@ -1,5 +1,9 @@
+// менюшка открывающаяся при клике на офис при клике должно открываться справа меню с описанием и кнопкой открыть
+
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
+import {useUnit} from "effector-react";
+import { $user } from "@shared/store/auth";
 
 interface PositionedMenuProps {
   menuPos: { x: number; y: number } | null;
@@ -21,6 +25,11 @@ const PositionedMenuOffice: React.FC<PositionedMenuProps> = ({
     onClose();
     onEdit();
   };
+
+  // достаем инфу о том админ или пользователь
+  const user = useUnit($user);
+  const canEdit = user?.role === "ADMIN";
+  const canBook = user?.role === "USER";
 
   return (
     <Menu
@@ -47,9 +56,9 @@ const PositionedMenuOffice: React.FC<PositionedMenuProps> = ({
           },
         }}
       >
-        Редактировать
+        {canEdit ? "Редактировать" : "Открыть"}
       </MenuItem>
-      <MenuItem
+      {canEdit && <MenuItem
         onClick={handleDelete}
         sx={{
           color: "#d32f2f",
@@ -59,7 +68,7 @@ const PositionedMenuOffice: React.FC<PositionedMenuProps> = ({
         }}
       >
         Удалить
-      </MenuItem>
+      </MenuItem>}
     </Menu>
   );
 };

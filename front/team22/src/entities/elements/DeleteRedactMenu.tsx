@@ -31,6 +31,7 @@ export default function PositionedMenu({
 }: PositionMenuProps) {
   const open = Boolean(anchorForCircle);
   const [getFloorById] = useUnit([getFloorByIdFx]);
+
   return (
     <div onClick={onClose}>
       <Menu

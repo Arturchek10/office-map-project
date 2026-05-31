@@ -73,7 +73,5 @@ export const addFloorFx = createEffect<
   return (await res.json()) as TFloorDetails
 })
 
-export const $activeFloor = createStore<TFloorDetails | null>(null).on(
-  addFloorFx.doneData,
-  (_, floor) => floor
-)
+export const $activeFloor = createStore<TFloorDetails | null>(null)
+.on(addFloorFx.doneData, (_, floor) => floor)

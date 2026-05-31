@@ -1,36 +1,44 @@
-import { Box } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import Office from "@entities/Office/ui/Office";
 import type { TOffice } from "@entities/Office/type/office";
 import { drawerWidth } from "@features/OfficesBar/config/config";
 import { useEffect, useRef, useState } from "react";
+import { useUnit } from "effector-react";
 import { useNavigate } from "react-router-dom";
 import { fetchOfficeByIdFx } from "@shared/api/Offices/GetOfficeById";
 import { getFloorByIdFx } from "@shared/store/dataFromFloor";
 import { deleteOfficeFx } from "@shared/api/Offices/DeleteOffice";
 import PositionedMenuOffice from "./PositionedMenuOffice";
 import { Snackbar, Alert } from "@mui/material";
-
+import { useLocation } from "react-router-dom";
 //
 interface OfficesBarProps {
   offices: TOffice[];
   open: boolean;
   activeOfficeId?: number | null;
+  // isInsideOffice: boolean;
   onUserNavigation?: () => void;
   handleSetActiveOfficeId?: (id: number | null) => void;
+  resetActiveOffice?: () => void;
 }
 
 function OfficesBar({
   offices,
   open,
   activeOfficeId,
+  // isInsideOffice,
   onUserNavigation,
   // изменение активности офиса из HomePage
   handleSetActiveOfficeId,
+  // сброс активного офиса
+  resetActiveOffice,
 }: OfficesBarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const officeRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const navigate = useNavigate();
 
+  const location = useLocation()
+  const isInsideOffice = location.pathname.startsWith("/office/");
   // Состояние для контекстного меню
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [selectedOfficeId, setSelectedOfficeId] = useState<number | null>(null);
@@ -40,22 +48,6 @@ function OfficesBar({
     severity: "success" | "error";
   }>({ open: false, message: "", severity: "success" });
 
-  const handleClick = (id: number) => {
-    // Устанавливаем флаг, что переход инициирован пользователем
-    if (onUserNavigation) {
-      onUserNavigation();
-    }
-
-    fetchOfficeByIdFx(id);
-    fetchOfficeByIdFx.done.watch(({ result }) => {
-      if (result.startFloor === null) {
-        navigate(`/office/${id}/createfloor`);
-      } else {
-        navigate(`/office/${id}/floor/${result.startFloor.id}`);
-        getFloorByIdFx(result.startFloor.id);
-      }
-    });
-  };
 
   // Обработчик правой кнопки мыши
   const handleContextMenu = (e: React.MouseEvent, id: number) => {
@@ -98,7 +90,7 @@ function OfficesBar({
       handleCloseMenu();
     }
   };
-  
+
   // если этаж уже есть - открыть редактор, если нет - открыть создание этажа
   const handleEdit = async () => {
     if (!selectedOfficeId) return;
@@ -135,6 +127,7 @@ function OfficesBar({
     }
   }, [activeOfficeId]);
 
+  console.log("isInsideOffice в OfficesBar:", isInsideOffice); // ← для отладки
   return (
     <>
       <Box
@@ -142,22 +135,55 @@ function OfficesBar({
         sx={{
           position: "fixed",
           top: "60px",
-          pt: "10px",
-          pl: "10px",
           left: open ? drawerWidth : -(250 - drawerWidth),
           width: 250,
           height: "calc(100vh - 60px)",
-          // maxHeight: "calc(100vh - 60px)",
-          bgcolor: "white",
-          boxShadow: 3,
+          bgcolor: "rgba(255, 255, 255, 0.85)",
+          backdropFilter: "blur(12px)",
+          borderRight: "1px solid rgba(0,0,0,0.06)",
+          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
           overflowY: "auto",
-          transition: "left 0.3s ease",
+          transition: "left 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
           zIndex: 1100,
+          pt: "12px",
+          pb: "12px",
+          pl: "10px",
           pr: "10px",
+
+          // Красивый скроллбар
+          "&::-webkit-scrollbar": {
+            width: "6px",
+          },
+          "&::-webkit-scrollbar-track": {
+            background: "transparent",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            background: "#d1d5db",
+            borderRadius: "20px",
+            "&:hover": {
+              background: "#9ca3af",
+            },
+          },
         }}
       >
-        {offices.map((office) => {
+        {isInsideOffice && (
+          <Button
+            variant="outlined"
+            fullWidth
+            sx={{ mb: 2 }}
+            // startIcon={<ArrowBackIcon />}
+            onClick={() => {
+              resetActiveOffice?.();
+              navigate("/");
+            }}
+          >
+            Назад ко всем офисам
+          </Button>
+        )}
+        {!isInsideOffice && offices.map((office) => {
           const isActive = String(office.id) === String(activeOfficeId);
+          console.log("variable office inside OfficeBar", office) //тип TOffice address city id latitude longitude name
+          
           return (
             <Box
               key={office.id}

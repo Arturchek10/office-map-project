@@ -15,6 +15,11 @@ export default function FloorNavigation({
   currentFloor,
   onChange,
 }: FloorNavigationProps) {
+  
+  // логи FloorNavigation
+  // console.log("FloorNavigation component render");
+  // console.log("currentFloor", currentFloor?.id);
+
   // сортируем, чтобы кнопки всегда шли от нижнего к верхнему
   const sortedFloors = [...floors].sort((a, b) =>  b.orderNumber - a.orderNumber);
 

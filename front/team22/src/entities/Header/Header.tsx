@@ -1,45 +1,45 @@
-import { useNavigate } from "react-router-dom"
-import { useState, useEffect, useRef } from "react"
-import T1logo from "@entities/Header/assets/T1 logo white.svg?react"
-import { useAuthStore } from "@shared/store/auth"
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import T1logo from "@entities/Header/assets/T1 logo white.svg?react";
+import { useAuthStore } from "@shared/store/auth";
 
 type HeaderProps = {
-  officeName: string | undefined
-}
+  officeName: string | undefined;
+};
 
 export default function Header({ officeName }: HeaderProps) {
-  const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
-  const [showUserMenu, setShowUserMenu] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  let text = ""
+  let text = "";
   if (officeName !== undefined && officeName !== "") {
-    text = `Офис: "${officeName}"`
+    text = `Офис: "${officeName}"`;
   }
 
   const handleLogout = () => {
-    logout()
-    navigate("/auth")
-  }
+    logout();
+    navigate("/auth");
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false)
+        setShowUserMenu(false);
       }
-    }
+    };
 
-    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <header className="fixed top-0 left-0 w-full bg-[#2F80ED] h-[60px] z-[2000]">
       <div className="flex items-center justify-between h-full px-10 ">
-        <div className="w-1/3">
+        <div className="w-1/3 flex items-center h-full px-10 gap-4">
           <div className="relative" ref={menuRef}>
             <div
               className="text-white cursor-pointer hover:text-gray-200 transition-colors"
@@ -75,10 +75,14 @@ export default function Header({ officeName }: HeaderProps) {
               </div>
             )}
           </div>
+
+          <span className="text-sm font-medium text-white select-none">
+            {user?.role === "USER" ? "Пользователь" : "Администратор"}
+          </span>
         </div>
 
         {/* Центр — название офиса */}
-        <div className="w-1/3 flex justify-center">
+        <div className="w-1/3 flex justify-center select-none">
           <p className="font-bold text-white text-3xl tracking-wide drop-shadow-lg">
             {text}
           </p>
@@ -96,5 +100,5 @@ export default function Header({ officeName }: HeaderProps) {
         </div>
       </div>
     </header>
-  )
+  );
 }

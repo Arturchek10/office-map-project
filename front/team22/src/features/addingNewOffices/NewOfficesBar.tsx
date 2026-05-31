@@ -1,31 +1,38 @@
-import { Button, Paper, TextField, Box, Typography } from "@mui/material"
-import { useState } from "react"
-import { useYMaps } from "@pbe/react-yandex-maps"
-import ArrowBackIcon from "@mui/icons-material/ArrowBack"
+import { Button, Paper, TextField, Box, Typography } from "@mui/material";
+import { useState } from "react";
+import { useYMaps } from "@pbe/react-yandex-maps";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { $user } from "@shared/store/auth";
+import { useUnit } from "effector-react";
 
 interface NewOfficesBarProps {
-  onAddOffice: (formData: FormData) => void 
-  open: boolean
-  setOpen: (open: boolean) => void
+  onAddOffice: (formData: FormData) => void;
+  open: boolean;
+  setOpen: (open: boolean) => void;
 }
-
 
 interface YMapsApi {
   geocode: (
     query: string,
-    options?: Record<string, unknown>
+    options?: Record<string, unknown>,
   ) => Promise<{
     geoObjects: {
       get: (index: number) =>
         | {
-            geometry: { getCoordinates: () => number[] }
+            geometry: { getCoordinates: () => number[] };
           }
-        | undefined
-    }
-  }>
+        | undefined;
+    };
+  }>;
 }
 
 function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
+
+  const user = useUnit($user);
+
+  const canEdit = user?.role === "ADMIN";
+  const canBook = user?.role === "USER";
+
   const [formData, setFormData] = useState({
     name: "",
     address: "",
@@ -33,58 +40,64 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
     latitude: 0,
     longitude: 0,
     photo: null as File | null,
-  })
+  });
 
   const toggle = () => {
-    setOpen(!open)
-  }
+    setOpen(!open);
+  };
 
-   async function getCoordinates(searchQuery: string, ymapsApi: YMapsApi | null) {
-    if (!ymapsApi || !searchQuery.trim()) return null
+  async function getCoordinates(
+    searchQuery: string,
+    ymapsApi: YMapsApi | null,
+  ) {
+    if (!ymapsApi || !searchQuery.trim()) return null;
     try {
-      const result = await ymapsApi.geocode(searchQuery, { results: 1 })
-      const firstGeoObject = result.geoObjects.get(0)
-      if (!firstGeoObject) return null
-      return firstGeoObject.geometry.getCoordinates()
+      const result = await ymapsApi.geocode(searchQuery, { results: 1 });
+      const firstGeoObject = result.geoObjects.get(0);
+      if (!firstGeoObject) return null;
+      return firstGeoObject.geometry.getCoordinates();
     } catch {
-      return null
+      return null;
     }
   }
 
-const ymapsApi = useYMaps(["geocode"]) as YMapsApi | null
+  const ymapsApi = useYMaps(["geocode"]) as YMapsApi | null;
 
   const handleSave = async () => {
     if (formData.name && formData.address && formData.city) {
-      let coords: number[] | null = null
+      let coords: number[] | null = null;
 
       // формируем строку поиска (город + адрес)
-      const query = `${formData.city}, ${formData.address}`
-      coords = await getCoordinates(query, ymapsApi)
+      const query = `${formData.city}, ${formData.address}`;
+      coords = await getCoordinates(query, ymapsApi);
 
-     const officeData = {
+      const officeData = {
         name: formData.name,
         address: formData.address,
         city: formData.city,
         latitude: coords ? coords[0] : 0,
         longitude: coords ? coords[1] : 0,
-      }
+      };
 
-      const data = new FormData()
-      data.append("data", new Blob([JSON.stringify(officeData)], { type: "application/json" }))
+      const data = new FormData();
+      data.append(
+        "data",
+        new Blob([JSON.stringify(officeData)], { type: "application/json" }),
+      );
       if (formData.photo) {
-        data.append("photo", formData.photo)
+        data.append("photo", formData.photo);
       }
       // вывод в консоль данных офиса
-      for (let [key, value] of data.entries()){
-        if (value instanceof Blob){
+      for (let [key, value] of data.entries()) {
+        if (value instanceof Blob) {
           console.log(key, value.type, value.size);
           console.log(await value.text());
         } else {
-          console.log(key,value)
+          console.log(key, value);
         }
       }
-      onAddOffice(data)
-      console.log(data)
+      onAddOffice(data);
+      console.log(data);
       setFormData({
         name: "",
         address: "",
@@ -92,43 +105,45 @@ const ymapsApi = useYMaps(["geocode"]) as YMapsApi | null
         latitude: 0,
         longitude: 0,
         photo: null,
-      })
+      });
 
-      setOpen(false)
+      setOpen(false);
     }
-  }
+  };
 
   const handlePanelClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-  }
+    e.stopPropagation();
+  };
 
   const handleInputChange =
-  (field: keyof typeof formData) =>
-  (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (field === "photo") {
-      const file = e.target.files?.[0] || null
-      setFormData((prev) => ({ ...prev, photo: file }))
-    } else {
-      setFormData((prev) => ({ ...prev, [field]: e.target.value }))
-    }
-  }
+    (field: keyof typeof formData) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (field === "photo") {
+        const file = e.target.files?.[0] || null;
+        setFormData((prev) => ({ ...prev, photo: file }));
+      } else {
+        setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+      }
+    };
 
   return (
     <>
       {/* Кнопка открытия/закрытия */}
-      <Button
-        variant="contained"
-        onClick={toggle}
-        sx={{
-          position: "fixed",
-          top: 80,
-          right: 32,
-          zIndex: 1200,
-          boxShadow: 2,
-        }}
-      >
-        Новый офис
-      </Button>
+      { canEdit && 
+        <Button
+          variant="contained"
+          onClick={toggle}
+          sx={{
+            position: "fixed",
+            top: 80,
+            right: 32,
+            zIndex: 1200,
+            boxShadow: 2,
+          }}
+        >
+          Новый офис
+        </Button>
+      }
 
       {/* Панель добавления офиса */}
       <Paper
@@ -213,7 +228,7 @@ const ymapsApi = useYMaps(["geocode"]) as YMapsApi | null
           <Typography
             variant="caption"
             color="text.secondary"
-            sx={{ display: "block", }}
+            sx={{ display: "block" }}
           >
             Поддерживаются форматы: PNG, JPEG, SVG. Максимальный размер — 10 МБ.
           </Typography>
@@ -241,7 +256,7 @@ const ymapsApi = useYMaps(["geocode"]) as YMapsApi | null
         </Box>
       </Paper>
     </>
-  )
+  );
 }
 
-export default NewOfficesBar
+export default NewOfficesBar;

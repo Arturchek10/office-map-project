@@ -24,6 +24,8 @@ import { $activeOffice } from "@shared/api/Offices/GetOfficeById";
 import { addFloorFx } from "@shared/api/Floors/AddFloor";
 import { useNavigate, useParams } from "react-router-dom";
 import { $activeFloor } from "@shared/api/Floors/AddFloor";
+import { $currentFloor } from "@shared/store/floor";
+
 function AddFloor() {
   const [isOfficesBarOpen, setIsOfficesBarOpen] = useState(false);
   const toggleOfficesBar = () => {
@@ -45,6 +47,9 @@ function AddFloor() {
 
   const activeOffice = useUnit($activeOffice);
   const activeFloor = useUnit($activeFloor);
+  const currentFloor = useUnit($currentFloor);
+
+
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -122,7 +127,7 @@ function AddFloor() {
       <Box sx={{ display: "flex", height: "100vh" }}>
         <CssBaseline />
         <NavBar onToggleOffices={toggleOfficesBar} />
-        <OfficesBar offices={offices} open={isOfficesBarOpen} />
+        {/* <OfficesBar offices={offices} open={isOfficesBarOpen} /> */}
 
         <Box
           sx={{
@@ -135,13 +140,15 @@ function AddFloor() {
         >
           <Button
             variant="contained"
-            sx={{ position: "absolute", top: 80, right: 30 }}
+            sx={{ position: "absolute", top: 80, left: 100 }}
             // пока не нужно, переходим в редактор сразу после создания этажа 
-            // onClick={() =>
-            //   navigator(`/office/${officeId}/floor/${createdFloor.id}`)
-            // }
+            onClick={() =>{
+              console.log("------------------------------activeFloor",activeFloor)
+              console.log("------------------------------currentFloor", currentFloor);
+              navigator(`/office/${officeId}/floor/${currentFloor?.id}`)}
+            }
           >
-            Перейти к редактору
+            Назад
           </Button>
           <Paper
             elevation={3}

@@ -47,7 +47,7 @@ export const createApiRequest = async (
   const token = authState.token || localStorage.getItem("auth-token");
   const refreshTokenValue =
     authState.refreshToken || localStorage.getItem("auth-refresh-token");
-  console.log("token :", token);
+  // console.log("token :", token);
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
@@ -63,11 +63,11 @@ export const createApiRequest = async (
   // Универсальный fetch. Любая ошибка попадает в exception и выводится.
   const fetchWithCheck = async (customHeaders: Record<string, string>,): Promise<Response> => {
     const res = await fetch(url, { ...options, headers: customHeaders });
-    console.log("REQUEST:", {
-      url,
-      method: options.method,
-      headers: customHeaders
-    } )
+    // console.log("REQUEST:", {
+    //   url,
+    //   method: options.method,
+    //   headers: customHeaders
+    // } )
     if (!res.ok) {
       const text = await res.text().catch(() => "");
 

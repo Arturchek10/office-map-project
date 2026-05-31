@@ -1,87 +1,90 @@
 // компонент
-
-import { YMaps, Map, Placemark, useYMaps } from "@pbe/react-yandex-maps"
+import { YMaps, Map, Placemark, useYMaps } from "@pbe/react-yandex-maps";
 import {
   Box,
   Paper,
   TextField,
   IconButton,
   InputAdornment,
-} from "@mui/material"
-import SearchIcon from "@mui/icons-material/Search"
-import * as React from "react"
-import type { TOffice } from "@entities/Office/type/office"
+} from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import * as React from "react";
+import type { TOffice } from "@entities/Office/type/office";
+import { useEffect } from "react";
+
 interface MapOfficeProps {
-  offices: TOffice[]
-  activeOfficeId: number | null
-  setActiveOfficeId: (id: number | null) => void
+  offices: TOffice[];
+  activeOfficeId: number | null;
+  setActiveOfficeId: (id: number | null) => void;
 }
 
 type YMapLike = {
   setCenter: (
     coords: number[],
     zoom?: number,
-    options?: Record<string, unknown>
-  ) => void
-}
+    options?: Record<string, unknown>,
+  ) => void;
+};
 
 interface YMapsApi {
   SuggestView: new (
     input: HTMLInputElement,
-    options?: Record<string, unknown>
-  ) => unknown
+    options?: Record<string, unknown>,
+  ) => unknown;
   geocode: (
     query: string,
-    options?: Record<string, unknown>
+    options?: Record<string, unknown>,
   ) => Promise<{
     geoObjects: {
       get: (index: number) =>
         | {
-            geometry: { getCoordinates: () => number[] }
+            geometry: { getCoordinates: () => number[] };
           }
-        | undefined
-    }
-  }>
+        | undefined;
+    };
+  }>;
 }
 
 function MapSearchOverlay({
   mapRef,
 }: {
-  mapRef: React.RefObject<YMapLike | null>
+  mapRef: React.RefObject<YMapLike | null>;
 }) {
+  console.log("MapOffice RENDER");
+
   const ymapsApi = useYMaps([
     "SuggestView",
     "geocode",
-  ]) as unknown as YMapsApi | null
-  const [searchQuery, setSearchQuery] = React.useState("")
-  const inputElementRef = React.useRef<HTMLInputElement | null>(null)
+  ]) as unknown as YMapsApi | null;
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const inputElementRef = React.useRef<HTMLInputElement | null>(null);
 
   const handleSearch = React.useCallback(async () => {
-    const map = mapRef.current
-    if (!ymapsApi || !map || !searchQuery.trim()) return
+    const map = mapRef.current;
+    if (!ymapsApi || !map || !searchQuery.trim()) return;
 
     try {
-      const result = await ymapsApi.geocode(searchQuery, { results: 1 })
-      const firstGeoObject = result.geoObjects.get(0)
-      if (!firstGeoObject) return
+      const result = await ymapsApi.geocode(searchQuery, { results: 1 });
+      const firstGeoObject = result.geoObjects.get(0);
+      if (!firstGeoObject) return;
 
-      const coordinates = firstGeoObject.geometry.getCoordinates()
-      console.log(coordinates)
-      map.setCenter(coordinates, 14, { duration: 300 })
+      const coordinates = firstGeoObject.geometry.getCoordinates();
+      console.log("coordinates: ", coordinates);
+      map.setCenter(coordinates, 14, { duration: 300 });
     } catch {
       // ignore
     }
-  }, [searchQuery, ymapsApi, mapRef])
+  }, [searchQuery, ymapsApi, mapRef]);
 
   React.useEffect(() => {
     if (ymapsApi && inputElementRef.current) {
       try {
-        new ymapsApi.SuggestView(inputElementRef.current, { results: 5 })
+        new ymapsApi.SuggestView(inputElementRef.current, { results: 5 });
       } catch {
         // ignore
       }
     }
-  }, [ymapsApi])
+  }, [ymapsApi]);
 
   return (
     <Paper
@@ -104,8 +107,8 @@ function MapSearchOverlay({
         inputRef={inputElementRef}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
-            e.preventDefault()
-            handleSearch()
+            e.preventDefault();
+            handleSearch();
           }
         }}
         slotProps={{
@@ -125,7 +128,7 @@ function MapSearchOverlay({
         }}
       />
     </Paper>
-  )
+  );
 }
 
 function MapOffice({
@@ -133,7 +136,21 @@ function MapOffice({
   activeOfficeId,
   setActiveOfficeId,
 }: MapOfficeProps) {
-  const mapInstanceRef = React.useRef<YMapLike | null>(null)
+  const mapInstanceRef = React.useRef<YMapLike | null>(null);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    if (!activeOfficeId) return;
+
+    const office = offices.find((o) => o.id === activeOfficeId);
+    if (!office) return;
+
+    const coordinates = [office.latitude, office.longitude];
+
+    mapInstanceRef.current.setCenter(coordinates, 14, {
+      duration: 500,
+    });
+  }, [activeOfficeId, offices]);
 
   return (
     <YMaps
@@ -149,11 +166,11 @@ function MapOffice({
           height="100%"
           options={{ suppressMapOpenBlock: true }}
           instanceRef={(ref) => {
-            mapInstanceRef.current = ref
+            mapInstanceRef.current = ref;
           }}
         >
           {offices.map((office) => {
-            const isActive = office.id === activeOfficeId
+            const isActive = office.id === activeOfficeId;
             return (
               <Placemark
                 key={office.id}
@@ -169,13 +186,13 @@ function MapOffice({
                 }}
                 onClick={() => setActiveOfficeId(isActive ? null : office.id)}
               />
-            )
+            );
           })}
         </Map>
         <MapSearchOverlay mapRef={mapInstanceRef} />
       </Box>
     </YMaps>
-  )
+  );
 }
 
-export default MapOffice
+export default MapOffice;

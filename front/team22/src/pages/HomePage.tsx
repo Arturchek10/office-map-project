@@ -1,65 +1,82 @@
-import { YMaps } from "@pbe/react-yandex-maps"
-import CssBaseline from "@mui/material/CssBaseline"
-import MapOffice from "@features/Map/Map"
-import NavBar from "@entities/NavBar/NavBar"
-import OfficesBar from "@features/OfficesBar/OfficesBar"
+import { YMaps } from "@pbe/react-yandex-maps";
+import CssBaseline from "@mui/material/CssBaseline";
+import MapOffice from "@features/Map/Map";
+import NavBar from "@entities/NavBar/NavBar";
+import OfficesBar from "@features/OfficesBar/OfficesBar";
 import {
   Box,
   CircularProgress,
   Snackbar,
   Alert,
   Typography,
-} from "@mui/material"
-import { useEffect, useState } from "react"
-import { useUnit } from "effector-react"
+} from "@mui/material";
+import { useEffect, useState } from "react";
+import { useUnit } from "effector-react";
 import {
   $offices,
   $officesError,
   $officesLoading,
   fetchOfficesFx,
-} from "@shared/api/Offices/GetOfficesList"
-import Header from "@entities/Header/Header"
-import NewOfficesBar from "@features/addingNewOffices/NewOfficesBar"
-import { addOfficeFx } from "@shared/api/Offices/AddOffice"
-
+} from "@shared/api/Offices/GetOfficesList";
+import Header from "@entities/Header/Header";
+import NewOfficesBar from "@features/addingNewOffices/NewOfficesBar";
+import { addOfficeFx } from "@shared/api/Offices/AddOffice";
+import OfficeInfoBar from "@features/OfficeInfoBar/OfficeInfoBar";
+import { useLocation } from "react-router-dom";
 
 function HomePage() {
-  const [isOfficesBarOpen, setIsOfficesBarOpen] = useState(false)
-  const [isNewOfficeBarOpen, setIsNewOfficeBarOpen] = useState(false)
-  const [activeOfficeId, setActiveOfficeId] = useState<number | null>(null)
+
+  console.log("HOME PAGE RENDER");
+
+  const [isOfficesBarOpen, setIsOfficesBarOpen] = useState(false);
+  const [isNewOfficeBarOpen, setIsNewOfficeBarOpen] = useState(false);
+  const [activeOfficeId, setActiveOfficeId] = useState<number | null>(null);
+
+  const isOfficeInfoOpen = activeOfficeId !== null;
+
+  const location = useLocation();
+  console.log("location.pathname: ", location.pathname)
+  const isInsideOffice = location.pathname.startsWith("/office/");
 
   const [offices, loading, error] = useUnit([
     $offices,
     $officesLoading,
     $officesError,
-  ])
+  ]);
+
+  const selectedOffice = offices.find((o) => o.id === activeOfficeId) ?? null;
 
   const [snackbar, setSnackbar] = useState<{
-    open: boolean
-    message: string
-    severity: "success" | "error" | "info" | "warning"
+    open: boolean;
+    message: string;
+    severity: "success" | "error" | "info" | "warning";
   }>({
     open: false,
     message: "",
     severity: "info",
-  })
+  });
 
   useEffect(() => {
-    fetchOfficesFx()
-  }, [])
+    fetchOfficesFx();
+  }, []);
 
-  const toggleOfficesBar = () => setIsOfficesBarOpen((prev) => !prev)
+  const toggleOfficesBar = () => setIsOfficesBarOpen((prev) => !prev);
 
   // Единая точка выбора офиса.
   // Используется и картой, и боковой панелью.
   // Повторный клик по активному офису снимает выделение.
   const handleSetActiveOfficeId = (id: number | null) => {
-    setActiveOfficeId((prev) => (prev === id ? null: id))
-    console.log("метод внутри HomePage: handleSetActiveOfficeId")
+    setActiveOfficeId((prev) => (prev === id ? null : id));
+    console.log("метод внутри HomePage: handleSetActiveOfficeId");
     if (!isOfficesBarOpen && id !== null) {
-      setIsOfficesBarOpen(true)
+      setIsOfficesBarOpen(true);
     }
-  }
+  };
+
+  // функция сброса активного офиса и его id
+  const resetActiveOffice = () => {
+    setActiveOfficeId(null);
+  };
 
   const handleAddOffice = (formData: FormData) => {
     addOfficeFx(formData)
@@ -70,16 +87,17 @@ function HomePage() {
           open: true,
           message: "✅ Офис успешно сохранён!",
           severity: "success",
-        })
+        });
       })
       .catch((e) => {
         setSnackbar({
           open: true,
           message: e.message || "❌ Ошибка при сохранении офиса",
           severity: "error",
-        })
-      })
-  }
+        });
+      });
+  };
+
 
   if (error) {
     return (
@@ -96,7 +114,7 @@ function HomePage() {
           Ошибка загрузки офисов: {error?.message || "Неизвестная ошибка"}
         </Typography>
       </Box>
-    )
+    );
   }
 
   if (loading) {
@@ -111,12 +129,12 @@ function HomePage() {
       >
         <CircularProgress size={80} />
       </Box>
-    )
+    );
   }
 
   return (
     <>
-      <Header officeName = ''/>
+      <Header officeName="" />
       <Box sx={{ display: "flex", height: "100vh" }}>
         <CssBaseline />
         <NavBar onToggleOffices={toggleOfficesBar} />
@@ -130,7 +148,16 @@ function HomePage() {
           offices={offices}
           open={isOfficesBarOpen}
           activeOfficeId={activeOfficeId}
-          handleSetActiveOfficeId={handleSetActiveOfficeId} //
+          // isInsideOffice={isInsideOffice}
+          handleSetActiveOfficeId={handleSetActiveOfficeId}
+          resetActiveOffice={resetActiveOffice}
+        />
+        {/* OfficeInfoBar */}
+        <OfficeInfoBar
+          open={isOfficeInfoOpen}
+          activeOfficeId={activeOfficeId}
+          activeOffice={selectedOffice}
+          onClose={() => setActiveOfficeId(null)}
         />
         <YMaps
           query={{
@@ -162,7 +189,7 @@ function HomePage() {
         </Alert>
       </Snackbar>
     </>
-  )
+  );
 }
 
-export default HomePage
+export default HomePage;

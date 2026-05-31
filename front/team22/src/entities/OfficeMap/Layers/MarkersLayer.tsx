@@ -153,11 +153,9 @@ export default function MarkersLayer({
       glowAnimRef.current?.stop(); // останавливаем анимацию свечения
       // Сброс opacity
       if (glowBigRef.current) {
-        console.log("glowBigRef.current.opacity(0);")
         glowBigRef.current.opacity(0);
       }
       if (glowMidRef.current) {
-        console.log("glowMidRef.current.opacity(0);");
         glowMidRef.current.opacity(0);
       }
     }
