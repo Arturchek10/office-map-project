@@ -1,29 +1,54 @@
-import {
-  ListItemButton,
-  ListItemAvatar,
-  Avatar,
-  ListItemText,
-} from "@mui/material";
+import { Box, Typography, Tooltip } from "@mui/material";
+import { getImageUrl } from "@shared/utils/getImageUrl";
 
-import type { TFurniture } from "./type/firniture";
-
-interface FurnitureProps extends TFurniture {
+interface FurnitureProps {
+  name: string;
+  photoUrl: string;
   onClick?: () => void;
 }
 
 function Furniture({ name, photoUrl, onClick }: FurnitureProps) {
+
+  const imageSrc = getImageUrl(photoUrl)
   return (
-    <ListItemButton sx={{border: "1px solid #2F80ED", borderRadius: "5px", mb: "5px"}} onClick={onClick}>
-      <ListItemAvatar>
-        <Avatar
-          src={photoUrl}
+    <Tooltip title={name} arrow placement="top">
+      <Box
+        onClick={onClick}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 70,
+          height: 70,
+          padding: 1,
+          border: "1px solid #e0e0e0",
+          borderRadius: "8px",
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+          "&:hover": {
+            borderColor: "#2F80ED",
+            backgroundColor: "#f8fbff",
+            transform: "scale(1.08)",
+          },
+          "&:active": {
+            transform: "scale(0.95)",
+          },
+        }}
+      >
+        <Box
+          component="img"
+          src={imageSrc}
           alt={name}
-          sx={{ width: 40, height: 40 }}
-          variant="square"
+          sx={{
+            width: 48,
+            height: 48,
+            objectFit: "contain",
+            mb: 1,
+          }}
         />
-      </ListItemAvatar>
-      <ListItemText primary={name} />
-    </ListItemButton>
+      </Box>
+    </Tooltip>
   );
 }
 

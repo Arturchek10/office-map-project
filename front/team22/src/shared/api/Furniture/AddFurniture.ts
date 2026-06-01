@@ -5,6 +5,7 @@ export type FurnitureData = {
   name: string
   position: { position_x: number; position_y: number }
   photoUrl: string
+  
 }
 
 export type TFurnitureResponse = {

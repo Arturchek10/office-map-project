@@ -1,71 +1,95 @@
-import React, { useRef, useState, useEffect } from "react"
-import { Image as KonvaImage, Transformer } from "react-konva"
-import Konva from "konva"
-import useImage from "use-image"
+import React, { useRef, useState, useEffect, useMemo } from "react";
+import { Image as KonvaImage, Transformer } from "react-konva";
+import Konva from "konva";
+import useImage from "use-image";
+import { getImageUrl } from "@shared/utils/getImageUrl";
 
 interface FurnitureOnMapProps {
-  id: number
-  photo: string
-  x: number
-  y: number
-  width?: number
-  height?: number
-  onSizeChange?: (width: number, height: number) => void
-  initialWidth?: number
-  initialHeight?: number
-  rotation?: number
-  onRotationChange?: (angle: number) => void
-  onPositionChange?: (x: number, y: number) => void
-  editable?: boolean
-  onContextMenu?: (id: number, pos: { x: number; y: number }) => void
+  id: number;
+  photo: string;
+  x: number;
+  y: number;
+  initialWidth?: number;
+  initialHeight?: number;
+  rotation?: number;
+  editable?: boolean;
+  onPositionChange?: (x: number, y: number) => void;
+  onSizeChange?: (width: number, height: number) => void;
+  onRotationChange?: (angle: number) => void;
+  onContextMenu?: (id: number, pos: { x: number; y: number }) => void;
 }
 
-const snapToGrid = (value: number, gridSize = 3) =>
-  Math.round(value / gridSize) * gridSize
+const snapToGrid = (value: number, gridSize = 5) =>
+  Math.round(value / gridSize) * gridSize;
 
 const FurnitureOnMap: React.FC<FurnitureOnMapProps> = ({
   id,
   photo,
   x,
   y,
-  width = 100,
-  height = 100,
+  initialWidth = 60,
+  initialHeight = 60,
+  rotation: initialRotation = 0,
+  editable = true,
+  onPositionChange,
   onSizeChange,
   onRotationChange,
-  onPositionChange,
-  rotation: initialRotation = 0,
-  initialWidth,
-  initialHeight,
-  editable = true,
   onContextMenu,
 }) => {
-  const [img] = useImage(photo)
+  // Защита от пустого photo
+  if (!photo) {
+    console.warn(`[Furniture ${id}] Received empty photo prop`);
+    return null;
+  }
+
+  const fullPhotoUrl = useMemo(() => {
+    const url = getImageUrl(photo);
+    console.log(`[Furniture ${id}] Final URL:`, url);
+    return url;
+  }, [photo, id]);
+
+  const [img] = useImage(fullPhotoUrl || "", "anonymous");
+
   const [size, setSize] = useState({
-    width: initialWidth || width,
-    height: initialHeight || height,
-  })
-  const [rotation, setRotation] = useState(initialRotation)
+    width: initialWidth,
+    height: initialHeight,
+  });
+  const [rotation, setRotation] = useState(initialRotation);
 
-  const imageRef = useRef<Konva.Image>(null)
-  const transformerRef = useRef<Konva.Transformer>(null)
+  const imageRef = useRef<Konva.Image>(null);
+  const transformerRef = useRef<Konva.Transformer>(null);
 
-  // Синхронизируем позицию изображения с пропсами при их изменении
+  // Логирование статуса загрузки
+  useEffect(() => {
+    if (img) {
+      console.log(`[Furniture ${id}] ✅ Image LOADED successfully`);
+    }
+    // Убираем предупреждение при первом рендере
+    else if (fullPhotoUrl && !img) {
+      // Можно оставить предупреждение только если долго не грузится
+      // или вообще убрать console.warn
+      console.warn(`[Furniture ${id}] ❌ Image NOT loaded yet: ${fullPhotoUrl}`);
+    }
+  }, [img, fullPhotoUrl, id]);
+
+  // Обновление позиции
   useEffect(() => {
     if (imageRef.current) {
-      imageRef.current.x(x)
-      imageRef.current.y(y)
-      imageRef.current.getLayer()?.batchDraw()
+      imageRef.current.x(x);
+      imageRef.current.y(y);
+      imageRef.current.getLayer()?.batchDraw();
     }
-  }, [x, y])
+  }, [x, y]);
 
+  // Обновление Transformer
   useEffect(() => {
-    if (editable && transformerRef.current && imageRef.current) {
-      transformerRef.current.nodes([imageRef.current])
-      transformerRef.current.getLayer()?.batchDraw()
+    if (editable && transformerRef.current && imageRef.current && img) {
+      transformerRef.current.nodes([imageRef.current]);
+      transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [img, editable])
+  }, [editable, img]);
 
-  if (!img) return null
+  if (!img) return null;
 
   return (
     <>
@@ -77,57 +101,42 @@ const FurnitureOnMap: React.FC<FurnitureOnMapProps> = ({
         width={size.width}
         height={size.height}
         rotation={rotation}
+        offsetX={size.width / 2}
+        offsetY={size.height / 2}
         draggable={editable}
         onContextMenu={(e) => {
-          e.evt.preventDefault()
-          e.evt.stopPropagation()
-          e.evt.stopImmediatePropagation()
-
-          if (editable && onContextMenu) {
-            console.log("Context menu opened for furniture:", id)
-            onContextMenu(id, { x: e.evt.clientX, y: e.evt.clientY })
-          }
-        }}
-        onDragMove={(e) => {
-          if (!editable) return
-          const snappedX = snapToGrid(e.target.x())
-          const snappedY = snapToGrid(e.target.y())
-          e.target.x(snappedX)
-          e.target.y(snappedY)
+          e.evt.preventDefault();
+          onContextMenu?.(id, { x: e.evt.clientX, y: e.evt.clientY });
         }}
         onDragEnd={(e) => {
-          if (!editable) return
-          const newX = snapToGrid(e.target.x())
-          const newY = snapToGrid(e.target.y())
-
-          if (onPositionChange) {
-            onPositionChange(newX, newY)
-          }
+          if (!editable) return;
+          const newX = snapToGrid(e.target.x());
+          const newY = snapToGrid(e.target.y());
+          onPositionChange?.(newX, newY);
         }}
         onTransformEnd={() => {
-          if (!editable || !imageRef.current) return
-          const node = imageRef.current
+          if (!editable || !imageRef.current) return;
+          const node = imageRef.current;
 
-          let newWidth = node.width() * node.scaleX()
-          let newHeight = node.height() * node.scaleY()
+          let newWidth = Math.round(node.width() * node.scaleX());
+          let newHeight = Math.round(node.height() * node.scaleY());
+          let newRotation = Math.round(node.rotation() / 15) * 15;
 
-          newWidth = snapToGrid(newWidth)
-          newHeight = snapToGrid(newHeight)
+          newWidth = snapToGrid(newWidth);
+          newHeight = snapToGrid(newHeight);
 
-          let newRotation = node.rotation()
-          newRotation = Math.round(newRotation / 15) * 15
+          setSize({ width: newWidth, height: newHeight });
+          setRotation(newRotation);
 
-          setSize({ width: newWidth, height: newHeight })
-          setRotation(newRotation)
+          node.scaleX(1);
+          node.scaleY(1);
+          node.rotation(newRotation);
 
-          node.rotation(newRotation)
-          node.scaleX(1)
-          node.scaleY(1)
-
-          if (onRotationChange) onRotationChange(newRotation)
-          if (onSizeChange) onSizeChange(newWidth, newHeight)
+          onSizeChange?.(newWidth, newHeight);
+          onRotationChange?.(newRotation);
         }}
       />
+
       {editable && (
         <Transformer
           ref={transformerRef}
@@ -141,11 +150,11 @@ const FurnitureOnMap: React.FC<FurnitureOnMapProps> = ({
           anchorStroke="#56CCF2"
           anchorFill="#56CCF2"
           borderStroke="#56CCF2"
-          borderDash={[10, 5]}
+          borderDash={[6, 3]}
         />
       )}
     </>
-  )
-}
+  );
+};
 
-export default FurnitureOnMap
+export default FurnitureOnMap;

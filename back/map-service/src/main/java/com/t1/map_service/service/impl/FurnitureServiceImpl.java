@@ -91,10 +91,10 @@ public class FurnitureServiceImpl implements FurnitureService {
     public FurnitureDto placeFurniture(Long floorId, FurniturePlaceRequest request) {
         log.debug("Place furniture: start (floorId={}, name={})", floorId, request.name());
 
-        if (!repository.existsByNameIgnoreCase(request.name())) {
-            log.warn("Place furniture: furniture not found (name={})", request.name());
-            throw new EntityNotFoundException("Furniture with name=%s not found".formatted(request.name()));
-        }
+//        if (!repository.existsByNameIgnoreCase(request.name())) {
+//            log.warn("Place furniture: furniture not found (name={})", request.name());
+//            throw new EntityNotFoundException("Furniture with name=%s not found".formatted(request.name()));
+//        }
 
         Floor relatedFloor = floorService.getEntityById(floorId);
         log.debug("Place furniture: floor loaded (floorId={})", floorId);
@@ -167,6 +167,7 @@ public class FurnitureServiceImpl implements FurnitureService {
     @Override
     @Transactional
     public void deleteFurniture(Long furnitureId) {
+        log.error("DELETE CALLED {}", furnitureId);
         log.debug("Delete furniture: start (furnitureId={})", furnitureId);
 
         Furniture furniture = innerService.getEntityById(furnitureId);

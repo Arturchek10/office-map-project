@@ -16,7 +16,7 @@ import type {
   MarkerTypes,
 } from "@shared/types/marker";
 import PositionedMenu from "@entities/elements/MenuForType";
-import AddingFurniture from "@features/addingFurniture/addingFurnitire";
+import AddingFurniture from "@features/addingFurniture/addingFurniture";
 import DeleteRedactMenu from "../elements/DeleteRedactMenu";
 import RedactorMenu from "@entities/RedactorMenu/RedactorMenu";
 import { useUnit } from "effector-react";
@@ -124,7 +124,7 @@ export default function OfficeMap() {
     null,
   );
   // размер мебели
-  const [lastSize] = useState({ width: 50, height: 50 });
+  const [lastSize] = useState({ width: 30, height: 30 });
 
   const allowedTypes: string[] = ["image/jpeg", "image/jpg", "image/png"];
 
@@ -178,39 +178,25 @@ export default function OfficeMap() {
   const furnitures = useUnit($furnitures);
 
   useEffect(() => {
-    if (!furnitures) return;
+    if (!furnitures) {
+      setFurnitureOnMap([]);
+      setServerFurnitureIds(new Set());
+      return;
+    }
 
-    // console.log("Загружена мебель с сервера:", furnitures);
+    const mapped = furnitures.map((f) => ({
+      id: f.id,
+      name: f.name,
+      photo: f.photoUrl,
+      position: f.position,
+      width: f.sizeFactor || 80,
+      height: f.sizeFactor || 80,
+      angle: f.angle || 0,
+    }));
 
-    const mapped = furnitures.map((f) => {
-      // console.log("Обрабатываем мебель:", f);
-
-      if (!f.photoUrl) {
-        // console.error("У мебели с сервера отсутствует photoUrl:", f);
-      }
-
-      return {
-        id: f.id,
-        name: f.name,
-        photo: f.photoUrl,
-        position: {
-          position_x: f.position.position_x,
-          position_y: f.position.position_y,
-        },
-        width: f.sizeFactor,
-        height: f.sizeFactor,
-        angle: f.angle,
-      };
-    });
-
-    // console.log("Преобразованная мебель:", mapped);
     setFurnitureOnMap(mapped);
-
-    // Сохраняем ID серверной мебели
-    const serverIds = new Set(furnitures.map((f) => f.id));
-    setServerFurnitureIds(serverIds);
-    // console.log("Сохранены ID серверной мебели:", serverIds);
-  }, [furnitures]);
+    setServerFurnitureIds(new Set(furnitures.map((f) => f.id)));
+  }, [furnitures]); // оставляем, но делаем чище
 
   // Добавление вручную через панель
   const addFurnitureToMap = (item: { name: string; photoUrl: string }) => {
@@ -507,21 +493,17 @@ export default function OfficeMap() {
   };
 
   const handleFurnitureDelete = async () => {
+    if (!selectedFurnitureId) return;
+
     if (selectedFurnitureId) {
       try {
-        // Проверяем, является ли мебель серверной
-        if (serverFurnitureIds.has(selectedFurnitureId)) {
-          // console.log("Удаляем серверную мебель:", selectedFurnitureId);
-          // Удаляем с сервера
-          await deleteFurnitureFx(selectedFurnitureId);
-        } else {
-          // console.log("Удаляем локальную мебель:", selectedFurnitureId);
-        }
-
-        // Удаляем из локального состояния
+        // Удаляем с сервера
+        await deleteFurnitureFx(selectedFurnitureId);
         deleteFurniture(selectedFurnitureId);
-        setSelectedFurnitureId(null);
-        setFurnitureMenuPos(null);
+
+        // // Удаляем из локального состояния
+        // setSelectedFurnitureId(null);
+        // setFurnitureMenuPos(null);
       } catch (error) {
         console.error("Ошибка при удалении мебели:", error);
       }
@@ -716,7 +698,8 @@ export default function OfficeMap() {
               setOpen={setPanelOpen}
               setEditable={setPanelOpen}
               furnitureOnMap={furnitureOnMap}
-              serverFurnitureIds={serverFurnitureIds}
+              setFurnitureOnMap={setFurnitureOnMap}
+              // serverFurnitureIds={serverFurnitureIds}
               currentFloorId={currentFloor?.id}
             />
           )}

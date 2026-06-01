@@ -38,7 +38,7 @@ public class FurnitureController implements FurnitureApi {
 
     @Override
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAnyAuthority('WORKSPACE_ADMIN', 'PROJECT_ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<FurnitureDto> create(
             @RequestPart("data") @Valid FurnitureCreateRequest request,
             @RequestPart("photo") MultipartFile photo
@@ -47,7 +47,7 @@ public class FurnitureController implements FurnitureApi {
     }
 
     @Override
-    @PreAuthorize("@perm.canManageFloor(authentication, #floorId)")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping( "/{floorId}")
     public ResponseEntity<FurnitureDto> place(
             @PathVariable Long floorId,
@@ -58,7 +58,7 @@ public class FurnitureController implements FurnitureApi {
 
     @Override
     @PatchMapping("/move/{furnitureId}")
-    @PreAuthorize("@perm.canManageFurniture(authentication, #furnitureId)")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<FurnitureDto> move(
             @PathVariable Long furnitureId,
             @RequestBody @Valid FurnitureMoveRequest request
@@ -68,7 +68,7 @@ public class FurnitureController implements FurnitureApi {
 
     @Override
     @PatchMapping("/ui/{furnitureId}")
-    @PreAuthorize("@perm.canManageFurniture(authentication, #furnitureId)")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<FurnitureDto> updateUi(
             @PathVariable Long furnitureId,
             @RequestBody @Valid FurniturePatchUiRequest request
@@ -78,7 +78,7 @@ public class FurnitureController implements FurnitureApi {
 
     @Override
     @PatchMapping(value = "/{furnitureId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("@perm.canManageFurniture(authentication, #furnitureId)")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<FurnitureDto> update(
             @PathVariable Long furnitureId,
             @RequestPart("data") @Valid FurniturePatchRequest request,
@@ -89,7 +89,7 @@ public class FurnitureController implements FurnitureApi {
 
     @Override
     @DeleteMapping("/{furnitureId}")
-    @PreAuthorize("@perm.canManageFurniture(authentication, #furnitureId)")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> delete(
             @PathVariable Long furnitureId
     ) {
