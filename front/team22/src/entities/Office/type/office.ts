@@ -5,6 +5,7 @@ export interface TOffice {
     longitude: number,
     photoUrl: string,
     city: string,
-    address: string
+    address: string,
+    floorsCount: number
 }
 

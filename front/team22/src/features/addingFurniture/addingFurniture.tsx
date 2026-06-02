@@ -1,3 +1,4 @@
+// компонент где каталог мебели и кнопка добавления
 import { Button, Paper, Box, Typography, Snackbar, Alert } from "@mui/material";
 import Furniture from "./Furniture/Furniture";
 import { MarkerTypes } from "@shared/types/marker";
@@ -75,7 +76,6 @@ function AddingFurniture({
   setFurnitureOnMap,
   currentFloorId,
 }: AddingFurnitureProps) {
-  console.log("furnitureOnMap.length", furnitureOnMap);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -160,7 +160,7 @@ function AddingFurniture({
       <Paper
         sx={{
           position: "fixed",
-          top: 120,
+          top: 140,
           right: open ? 0 : -280,
           width: 280,
           maxHeight: "calc(100vh - 140px)",
@@ -174,7 +174,7 @@ function AddingFurniture({
         }}
       >
         {/* плашка вдоль левой границы типо скрыть/закрыть каталога мебели */}
-        <>Х</>
+        
         {/* Заголовок */}
         <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
           <Typography variant="h6" fontWeight={600}>

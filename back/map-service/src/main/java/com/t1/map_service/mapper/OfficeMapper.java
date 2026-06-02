@@ -13,7 +13,18 @@ import java.time.Duration;
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface OfficeMapper {
 
+    @Mapping(
+            target = "floorsCount",
+            expression = "java(office.getFloors() == null ? 0 : office.getFloors().size())"
+    )
+    
     OfficeDto toDto(Office office);
+
+
+    @Mapping(
+            target = "floorsCount",
+            expression = "java(office.getFloors() == null ? 0 : office.getFloors().size())"
+    )
 
     // пресайн только для photoUrl
     @Mapping(target = "photoUrl",
@@ -36,4 +47,6 @@ public interface OfficeMapper {
         if (key == null || key.isBlank()) return null;
         return storage.presignGet(key, ttl);
     }
+
+
 }

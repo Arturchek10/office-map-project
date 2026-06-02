@@ -3,17 +3,18 @@ import { Button } from "@mui/material"
 
 interface AddingFurnitureButtonProps {
   onClick: () => void
+  isPanelOpen: boolean
 }
 
 const AddingFurnitureButton = forwardRef<HTMLButtonElement, AddingFurnitureButtonProps>(
-  function AddingFurnitureButton({ onClick }, ref) {
+  function AddingFurnitureButton({ onClick, isPanelOpen}, ref) {
     return (
       <Button
         ref={ref}
         variant="contained"
         onClick={onClick}
       >
-        Добавить мебель
+        {!isPanelOpen ? "Добавить мебель" : "Закрыть панель"}
       </Button>
     )
   }

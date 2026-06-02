@@ -549,7 +549,7 @@ export default function OfficeMap() {
             ref={btnRef}
           >
             <div ref={btnRef} className="absolute right-[20px]">
-              <AddingFurnitureButton onClick={() => setPanelOpen(true)} />
+              <AddingFurnitureButton isPanelOpen={panelOpen} onClick={() => setPanelOpen((prev) => !prev)} />
             </div>
           </Fade>
         )}

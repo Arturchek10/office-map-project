@@ -8,6 +8,7 @@ public record OfficeDto(
         Double latitude,
         Double longitude,
         String city,
-        String photoUrl
+        String photoUrl,
+        Integer floorsCount
 ) {
 }

@@ -11,6 +11,7 @@ import { deleteOfficeFx } from "@shared/api/Offices/DeleteOffice";
 import PositionedMenuOffice from "./PositionedMenuOffice";
 import { Snackbar, Alert } from "@mui/material";
 import { useLocation } from "react-router-dom";
+import { $user } from "@shared/store/auth";
 //
 interface OfficesBarProps {
   offices: TOffice[];
@@ -37,8 +38,13 @@ function OfficesBar({
   const officeRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const navigate = useNavigate();
 
-  const location = useLocation()
+  const location = useLocation();
   const isInsideOffice = location.pathname.startsWith("/office/");
+
+  // кто в роли
+  const user = useUnit($user);
+  const canEdit = user?.role === "ADMIN";
+
   // Состояние для контекстного меню
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [selectedOfficeId, setSelectedOfficeId] = useState<number | null>(null);
@@ -47,7 +53,6 @@ function OfficesBar({
     message: string;
     severity: "success" | "error";
   }>({ open: false, message: "", severity: "success" });
-
 
   // Обработчик правой кнопки мыши
   const handleContextMenu = (e: React.MouseEvent, id: number) => {
@@ -180,30 +185,38 @@ function OfficesBar({
             Назад ко всем офисам
           </Button>
         )}
-        {!isInsideOffice && offices.map((office) => {
-          const isActive = String(office.id) === String(activeOfficeId);
-          console.log("variable office inside OfficeBar", office) //тип TOffice address city id latitude longitude name
-          
-          return (
-            <Box
-              key={office.id}
-              ref={(el: HTMLDivElement | null) => {
-                officeRefs.current[office.id] = el;
-              }}
-              sx={{
-                borderRadius: "4px",
-                mb: 1,
-                cursor: "pointer",
-                transition: "background-color 0.2s ease",
-              }}
-              onClick={() => handleSetActiveOfficeId?.(office.id)}
-              // onClick={() => handleClick(office.id)}
-              onContextMenu={(e) => handleContextMenu(e, office.id)}
-            >
-              <Office {...office} active={isActive} />
-            </Box>
-          );
-        })}
+        {!isInsideOffice &&
+          offices.map((office) => {
+            const isActive = String(office.id) === String(activeOfficeId);
+            console.log("variable office inside OfficeBar", office); //тип TOffice address city id latitude longitude name
+            const isNoFloors =
+              office.floorsCount === 0 ||
+              office.floorsCount === null ||
+              office.floorsCount === undefined;
+            const canClick = !isNoFloors || canEdit;
+            return (
+              <Box
+                key={office.id}
+                ref={(el: HTMLDivElement | null) => {
+                  officeRefs.current[office.id] = el;
+                }}
+                sx={{
+                  borderRadius: "4px",
+                  mb: 1,
+                  cursor: "pointer",
+                  transition: "background-color 0.2s ease",
+                }}
+                onClick={
+                  canClick ? () => handleSetActiveOfficeId?.(office.id) : undefined
+                }
+                // onClick={() => handleClick(office.id)}
+                onContextMenu={ canClick ? (e) => handleContextMenu(e, office.id) : undefined
+                }
+              >
+                <Office {...office} active={isActive} isNoFloors={isNoFloors} />
+              </Box>
+            );
+          })}
       </Box>
 
       {/* Контекстное меню */}
