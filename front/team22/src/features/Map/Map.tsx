@@ -11,6 +11,10 @@ import SearchIcon from "@mui/icons-material/Search";
 import * as React from "react";
 import type { TOffice } from "@entities/Office/type/office";
 import { useEffect } from "react";
+import {
+  resolveYandexCoordinates,
+  type YMapsGeocoderApi,
+} from "@shared/utils/yandexGeocode";
 
 interface MapOfficeProps {
   offices: TOffice[];
@@ -26,23 +30,11 @@ type YMapLike = {
   ) => void;
 };
 
-interface YMapsApi {
+interface YMapsApi extends YMapsGeocoderApi {
   SuggestView: new (
     input: HTMLInputElement,
     options?: Record<string, unknown>,
   ) => unknown;
-  geocode: (
-    query: string,
-    options?: Record<string, unknown>,
-  ) => Promise<{
-    geoObjects: {
-      get: (index: number) =>
-        | {
-            geometry: { getCoordinates: () => number[] };
-          }
-        | undefined;
-    };
-  }>;
 }
 
 function MapSearchOverlay({
@@ -50,30 +42,27 @@ function MapSearchOverlay({
 }: {
   mapRef: React.RefObject<YMapLike | null>;
 }) {
-  console.log("MapOffice RENDER");
-
   const ymapsApi = useYMaps([
     "SuggestView",
     "geocode",
   ]) as unknown as YMapsApi | null;
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [searchError, setSearchError] = React.useState("");
   const inputElementRef = React.useRef<HTMLInputElement | null>(null);
 
   const handleSearch = React.useCallback(async () => {
     const map = mapRef.current;
     if (!ymapsApi || !map || !searchQuery.trim()) return;
 
-    try {
-      const result = await ymapsApi.geocode(searchQuery, { results: 1 });
-      const firstGeoObject = result.geoObjects.get(0);
-      if (!firstGeoObject) return;
+    setSearchError("");
+    const coordinates = await resolveYandexCoordinates(ymapsApi, searchQuery);
 
-      const coordinates = firstGeoObject.geometry.getCoordinates();
-      console.log("coordinates: ", coordinates);
-      map.setCenter(coordinates, 14, { duration: 300 });
-    } catch {
-      // ignore
+    if (!coordinates) {
+      setSearchError("Не удалось найти место");
+      return;
     }
+
+    map.setCenter(coordinates, 14, { duration: 300 });
   }, [searchQuery, ymapsApi, mapRef]);
 
   React.useEffect(() => {
@@ -103,7 +92,12 @@ function MapSearchOverlay({
         size="small"
         placeholder="Поиск по адресу или месту"
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onChange={(e) => {
+          setSearchQuery(e.target.value);
+          if (searchError) setSearchError("");
+        }}
+        error={Boolean(searchError)}
+        helperText={searchError || " "}
         inputRef={inputElementRef}
         onKeyDown={(e) => {
           if (e.key === "Enter") {

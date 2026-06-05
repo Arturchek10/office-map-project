@@ -4,6 +4,11 @@ import { useYMaps } from "@pbe/react-yandex-maps";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { $user } from "@shared/store/auth";
 import { useUnit } from "effector-react";
+import {
+  buildAddressQuery,
+  resolveYandexCoordinates,
+  type YMapsGeocoderApi,
+} from "@shared/utils/yandexGeocode";
 
 interface NewOfficesBarProps {
   onAddOffice: (formData: FormData) => void;
@@ -11,27 +16,11 @@ interface NewOfficesBarProps {
   setOpen: (open: boolean) => void;
 }
 
-interface YMapsApi {
-  geocode: (
-    query: string,
-    options?: Record<string, unknown>,
-  ) => Promise<{
-    geoObjects: {
-      get: (index: number) =>
-        | {
-            geometry: { getCoordinates: () => number[] };
-          }
-        | undefined;
-    };
-  }>;
-}
-
 function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
 
   const user = useUnit($user);
 
   const canEdit = user?.role === "ADMIN";
-  const canBook = user?.role === "USER";
 
   const [formData, setFormData] = useState({
     name: "",
@@ -41,42 +30,35 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
     longitude: 0,
     photo: null as File | null,
   });
+  const [formError, setFormError] = useState("");
 
   const toggle = () => {
     setOpen(!open);
   };
 
-  async function getCoordinates(
-    searchQuery: string,
-    ymapsApi: YMapsApi | null,
-  ) {
-    if (!ymapsApi || !searchQuery.trim()) return null;
-    try {
-      const result = await ymapsApi.geocode(searchQuery, { results: 1 });
-      const firstGeoObject = result.geoObjects.get(0);
-      if (!firstGeoObject) return null;
-      return firstGeoObject.geometry.getCoordinates();
-    } catch {
-      return null;
-    }
-  }
-
-  const ymapsApi = useYMaps(["geocode"]) as YMapsApi | null;
+  const ymapsApi = useYMaps(["geocode"]) as YMapsGeocoderApi | null;
 
   const handleSave = async () => {
     if (formData.name && formData.address && formData.city) {
-      let coords: number[] | null = null;
+      setFormError("");
 
       // формируем строку поиска (город + адрес)
-      const query = `${formData.city}, ${formData.address}`;
-      coords = await getCoordinates(query, ymapsApi);
+      const query = buildAddressQuery(formData.city, formData.address);
+      const coords = await resolveYandexCoordinates(ymapsApi, query);
+
+      if (!coords) {
+        setFormError(
+          "Не удалось определить координаты офиса. Проверьте город и адрес.",
+        );
+        return;
+      }
 
       const officeData = {
         name: formData.name,
         address: formData.address,
         city: formData.city,
-        latitude: coords ? coords[0] : 0,
-        longitude: coords ? coords[1] : 0,
+        latitude: coords[0],
+        longitude: coords[1],
       };
 
       const data = new FormData();
@@ -88,7 +70,7 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
         data.append("photo", formData.photo);
       }
       // вывод в консоль данных офиса
-      for (let [key, value] of data.entries()) {
+      for (const [key, value] of data.entries()) {
         if (value instanceof Blob) {
           console.log(key, value.type, value.size);
           console.log(await value.text());
@@ -106,6 +88,7 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
         longitude: 0,
         photo: null,
       });
+      setFormError("");
 
       setOpen(false);
     }
@@ -122,6 +105,7 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
         const file = e.target.files?.[0] || null;
         setFormData((prev) => ({ ...prev, photo: file }));
       } else {
+        if (formError) setFormError("");
         setFormData((prev) => ({ ...prev, [field]: e.target.value }));
       }
     };
@@ -245,6 +229,11 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
             borderColor: "divider",
           }}
         >
+          {formError && (
+            <Typography variant="body2" color="error" sx={{ mb: 1 }}>
+              {formError}
+            </Typography>
+          )}
           <Button
             fullWidth
             variant="contained"
