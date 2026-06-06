@@ -5,7 +5,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { AuthUser } from '../auth/types/auth-user';
 import { FloorEntity } from '../floors/entities/floor.entity';
+import { OfficesService } from '../offices/offices.service';
 import {
   LayerCreateRequestDto,
   LayerDto,
@@ -23,13 +25,16 @@ export class LayersService {
     private readonly layerRepository: Repository<LayerEntity>,
     @InjectRepository(FloorEntity)
     private readonly floorRepository: Repository<FloorEntity>,
+    private readonly officesService: OfficesService,
   ) {}
 
   async create(
     floorId: number,
     request: LayerCreateRequestDto,
+    user: AuthUser,
   ): Promise<LayerDto> {
     const floor = await this.findFloor(floorId);
+    await this.officesService.assertCanManageOffice(floor.officeId, user);
 
     if (await this.existsByName(floorId, request.name)) {
       throw new ConflictException(
@@ -86,8 +91,10 @@ export class LayersService {
   async update(
     layerId: number,
     request: LayerUpdateRequestDto,
+    user: AuthUser,
   ): Promise<LayerDto> {
     const layer = await this.findEntity(layerId);
+    await this.officesService.assertCanManageOffice(layer.floor.officeId, user);
 
     if (request.name !== undefined) {
       layer.name = request.name;
@@ -96,8 +103,9 @@ export class LayersService {
     return toLayerDto(await this.layerRepository.save(layer));
   }
 
-  async delete(layerId: number): Promise<void> {
+  async delete(layerId: number, user: AuthUser): Promise<void> {
     const layer = await this.findEntity(layerId);
+    await this.officesService.assertCanManageOffice(layer.floor.officeId, user);
     await this.layerRepository.remove(layer);
   }
 

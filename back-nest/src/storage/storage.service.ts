@@ -1,30 +1,37 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { mkdir, unlink, writeFile } from 'fs/promises';
-import { basename, join, resolve } from 'path';
+import { extname, join, resolve } from 'path';
 
 @Injectable()
 export class LocalFileStorageService {
-  private readonly uploadDir = resolve(process.cwd(), 'uploads', 'offices');
+  private readonly uploadsRoot = resolve(process.cwd(), 'uploads');
 
   async uploadImage(
     file: Express.Multer.File | undefined,
+    folder = 'offices',
     objectKey?: string | null,
   ): Promise<string> {
     if (!file || file.size === 0) {
-      throw new Error('File is empty');
+      throw new BadRequestException('File is empty');
     }
 
-    await mkdir(this.uploadDir, { recursive: true });
+    const safeFolder = this.safePathPart(folder);
+    const uploadDir = resolve(this.uploadsRoot, safeFolder);
+    if (!uploadDir.startsWith(this.uploadsRoot)) {
+      throw new BadRequestException('Upload folder is invalid');
+    }
 
-    const originalName = basename(file.originalname || 'image');
+    await mkdir(uploadDir, { recursive: true });
+
+    const originalName = file.originalname || 'image';
     const fileName = objectKey
-      ? `${objectKey}${this.ext(originalName, file.mimetype)}`
-      : `${process.hrtime.bigint()}-${originalName}`;
-    const targetPath = join(this.uploadDir, fileName);
+      ? `${this.safeBaseName(objectKey)}${this.ext(originalName, file.mimetype)}`
+      : `${Date.now()}-${process.hrtime.bigint()}${this.ext(originalName, file.mimetype)}`;
+    const targetPath = join(uploadDir, fileName);
 
     await writeFile(targetPath, file.buffer);
 
-    return `/uploads/offices/${fileName}`;
+    return `/uploads/${safeFolder}/${fileName}`;
   }
 
   async deleteImage(objectKey?: string | null): Promise<void> {
@@ -35,9 +42,8 @@ export class LocalFileStorageService {
       : objectKey;
     const normalized = pathPart.replace(/^\/+/, '');
     const targetPath = resolve(process.cwd(), normalized);
-    const uploadsRoot = resolve(process.cwd(), 'uploads');
 
-    if (!targetPath.startsWith(uploadsRoot)) {
+    if (!targetPath.startsWith(this.uploadsRoot)) {
       return;
     }
 
@@ -62,14 +68,29 @@ export class LocalFileStorageService {
   }
 
   private ext(fileName: string, mimeType?: string): string {
-    const lower = fileName.toLowerCase();
-    if (lower.endsWith('.png')) return '.png';
-    if (lower.endsWith('.jpg')) return '.jpg';
-    if (lower.endsWith('.jpeg')) return '.jpeg';
-    if (lower.endsWith('.svg')) return '.svg';
+    const extension = extname(fileName).toLowerCase();
+    if (['.png', '.jpg', '.jpeg', '.svg'].includes(extension)) {
+      return extension;
+    }
     if (mimeType === 'image/png') return '.png';
     if (mimeType === 'image/jpeg') return '.jpg';
     if (mimeType === 'image/svg+xml') return '.svg';
     return '';
+  }
+
+  private safePathPart(value: string): string {
+    const safe = value.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    return safe || 'files';
+  }
+
+  private safeBaseName(value: string): string {
+    const safe = value
+      .toLowerCase()
+      .replace(/\.[a-z0-9]+$/i, '')
+      .replace(/[^a-z0-9_-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    return safe || `${Date.now()}-${process.hrtime.bigint()}`;
   }
 }

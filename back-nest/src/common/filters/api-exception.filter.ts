@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 type ErrorBody = {
   status?: number;
   message?: string | string[];
+  error?: string;
   subErrors?: unknown[];
 };
 
@@ -50,12 +51,25 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
     if (body && typeof body === 'object') {
       const typed = body as ErrorBody;
-      const message = Array.isArray(typed.message)
-        ? 'Validation failed'
-        : typed.message;
+      if (Array.isArray(typed.message)) {
+        return {
+          message: 'Validation failed',
+          subErrors:
+            typed.subErrors ??
+            typed.message.map((message) => ({
+              object: 'Request',
+              message,
+            })),
+        };
+      }
+
+      const multipartError = this.normalizeMultipartError(typed.message);
+      if (multipartError) {
+        return multipartError;
+      }
 
       return {
-        message: message ?? this.defaultMessage(status),
+        message: typed.message ?? typed.error ?? this.defaultMessage(status),
         subErrors: typed.subErrors ?? [],
       };
     }
@@ -71,5 +85,27 @@ export class ApiExceptionFilter implements ExceptionFilter {
     return status === HttpStatus.INTERNAL_SERVER_ERROR
       ? 'Internal Server Error'
       : 'Request failed';
+  }
+
+  private normalizeMultipartError(
+    message?: string,
+  ): { message: string; subErrors: unknown[] } | null {
+    if (!message?.startsWith('Unexpected field')) {
+      return null;
+    }
+
+    const [, field] = message.match(/Unexpected field\s*-\s*(.+)$/) ?? [];
+    return {
+      message: field
+        ? `Unexpected multipart field "${field}"`
+        : 'Unexpected multipart field',
+      subErrors: [
+        {
+          object: 'MultipartForm',
+          field: field ?? null,
+          message: 'Only documented multipart fields are allowed',
+        },
+      ],
+    };
   }
 }

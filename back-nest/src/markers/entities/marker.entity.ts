@@ -3,11 +3,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  OneToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { DescriptionEntity } from '../../descriptions/entities/description.entity';
 import { LayerEntity } from '../../layers/entities/layer.entity';
+import { MarkerPhotoEntity } from './marker-photo.entity';
 
 export enum MarkerType {
   WORKSPACE = 'workspace',
@@ -43,17 +43,17 @@ export class MarkerEntity {
   @Column({ name: 'position_y', type: 'double precision', nullable: true })
   positionY?: number;
 
-  @Column({ name: 'description_id', type: 'bigint', nullable: true, unique: true })
-  descriptionId?: number;
+  @Column({ type: 'jsonb', nullable: true })
+  payload?: Record<string, unknown>;
 
-  @OneToOne(() => DescriptionEntity, {
-    nullable: true,
-    cascade: ['insert', 'update'],
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'description_id' })
-  description?: DescriptionEntity;
+  @Column({ name: 'price_per_hour', type: 'double precision', default: 0 })
+  pricePerHour: number;
 
   @Column({ name: 'is_uncomfortable', type: 'boolean', nullable: true })
   uncomfortable?: boolean;
+
+  @OneToMany(() => MarkerPhotoEntity, (photo) => photo.marker, {
+    cascade: true,
+  })
+  photos: MarkerPhotoEntity[];
 }

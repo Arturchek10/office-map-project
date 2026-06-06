@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { RoleEntity } from './entities/role.entity';
 import { UserEntity } from './entities/user.entity';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from './guards/optional-jwt-auth.guard';
@@ -12,7 +13,7 @@ import { TokenController } from './token.controller';
 @Global()
 @Module({
   imports: [
-    TypeOrmModule.forFeature([UserEntity]),
+    TypeOrmModule.forFeature([UserEntity, RoleEntity]),
     JwtModule.register({ global: true }),
   ],
   controllers: [AuthController, TokenController],

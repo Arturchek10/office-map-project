@@ -1,2 +1,0 @@
-ALTER TABLE floors
-    ADD COLUMN planImageUrl VARCHAR(1024);

@@ -6,9 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { AuthUser } from '../auth/types/auth-user';
 import { PageResponse, toPageResponse } from '../common/dto/page-response.dto';
 import { applyPoint } from '../common/utils/point';
 import { FloorEntity } from '../floors/entities/floor.entity';
+import { OfficesService } from '../offices/offices.service';
 import { LocalFileStorageService } from '../storage/storage.service';
 import {
   FurnitureCreateRequestDto,
@@ -29,6 +31,7 @@ export class FurnitureService {
     private readonly furnitureRepository: Repository<FurnitureEntity>,
     @InjectRepository(FloorEntity)
     private readonly floorRepository: Repository<FloorEntity>,
+    private readonly officesService: OfficesService,
     private readonly storage: LocalFileStorageService,
   ) {}
 
@@ -81,7 +84,7 @@ export class FurnitureService {
 
     const furniture = this.furnitureRepository.create({
       name: request.name,
-      photoKey: await this.storage.uploadImage(photo),
+      photoKey: await this.storage.uploadImage(photo, 'furniture'),
       angle: 0,
       sizeFactor: 1,
     });
@@ -95,12 +98,17 @@ export class FurnitureService {
   async placeFurniture(
     floorId: number,
     request: FurniturePlaceRequestDto,
+    user: AuthUser,
   ): Promise<FurnitureDto> {
-    const floor = await this.floorRepository.findOne({ where: { id: floorId } });
+    const floor = await this.floorRepository.findOne({
+      where: { id: floorId },
+      relations: { office: true },
+    });
 
     if (!floor) {
       throw new NotFoundException(`Floor with id=${floorId} not found`);
     }
+    this.officesService.assertCanManageLoadedOffice(floor.office, user);
 
     const photoKey = this.storage.extractObjectKeyFromUrl(request.photoUrl);
 
@@ -127,8 +135,10 @@ export class FurnitureService {
   async move(
     furnitureId: number,
     request: FurnitureMoveRequestDto,
+    user: AuthUser,
   ): Promise<FurnitureDto> {
     const furniture = await this.findEntity(furnitureId);
+    this.assertCanManageFurniture(furniture, user);
     applyPoint(furniture, request.position);
     return toFurnitureDto(
       await this.furnitureRepository.save(furniture),
@@ -139,8 +149,10 @@ export class FurnitureService {
   async updateUi(
     furnitureId: number,
     request: FurniturePatchUiRequestDto,
+    user: AuthUser,
   ): Promise<FurnitureDto> {
     const furniture = await this.findEntity(furnitureId);
+    this.assertCanManageFurniture(furniture, user);
 
     if (request.angle !== undefined) {
       furniture.angle = request.angle;
@@ -158,9 +170,11 @@ export class FurnitureService {
   async update(
     furnitureId: number,
     request: FurniturePatchRequestDto,
+    user: AuthUser,
     photo?: Express.Multer.File,
   ): Promise<FurnitureDto> {
     const furniture = await this.findEntity(furnitureId);
+    this.assertCanManageFurniture(furniture, user);
 
     if (request.name !== undefined) {
       furniture.name = request.name;
@@ -171,7 +185,7 @@ export class FurnitureService {
       furniture.photoKey = '';
     } else if (photo && photo.size > 0) {
       await this.storage.deleteImage(furniture.photoKey);
-      furniture.photoKey = await this.storage.uploadImage(photo);
+      furniture.photoKey = await this.storage.uploadImage(photo, 'furniture');
     }
 
     return toFurnitureDto(
@@ -180,15 +194,16 @@ export class FurnitureService {
     );
   }
 
-  async deleteFurniture(furnitureId: number): Promise<void> {
+  async deleteFurniture(furnitureId: number, user: AuthUser): Promise<void> {
     const furniture = await this.findEntity(furnitureId);
+    this.assertCanManageFurniture(furniture, user);
     await this.furnitureRepository.remove(furniture);
   }
 
   async findEntity(furnitureId: number): Promise<FurnitureEntity> {
     const furniture = await this.furnitureRepository.findOne({
       where: { id: furnitureId },
-      relations: { floor: true },
+      relations: { floor: { office: true } },
     });
 
     if (!furniture) {
@@ -196,6 +211,14 @@ export class FurnitureService {
     }
 
     return furniture;
+  }
+
+  private assertCanManageFurniture(furniture: FurnitureEntity, user: AuthUser): void {
+    if (!furniture.floor?.office) {
+      return;
+    }
+
+    this.officesService.assertCanManageLoadedOffice(furniture.floor.office, user);
   }
 
   private existsByName(name: string): Promise<boolean> {

@@ -27,7 +27,7 @@ export class FurnitureEntity {
   @Column({ name: 'position_y', type: 'double precision', nullable: true })
   positionY?: number;
 
-  @Column({ name: 'size_factor', type: 'smallint', default: 1 })
+  @Column({ name: 'size_factor', type: 'double precision', default: 1 })
   sizeFactor: number;
 
   @Column({ name: 'floor_id', type: 'bigint', nullable: true })

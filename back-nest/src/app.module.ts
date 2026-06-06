@@ -10,6 +10,7 @@ import { FurnitureModule } from './furniture/furniture.module';
 import { LayersModule } from './layers/layers.module';
 import { MarkersModule } from './markers/markers.module';
 import { OfficesModule } from './offices/offices.module';
+import { SeedModule } from './seed/seed.module';
 import { StorageModule } from './storage/storage.module';
 
 @Module({
@@ -31,6 +32,7 @@ import { StorageModule } from './storage/storage.module';
     }),
     StorageModule,
     AuthModule,
+    SeedModule,
     AdminModule,
     OfficesModule,
     FloorsModule,

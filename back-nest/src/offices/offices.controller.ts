@@ -9,12 +9,23 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  UploadedFile,
+  UploadedFiles,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import {
+  MultipartFiles,
+  resolveMultipartDataField,
+} from '../common/utils/multipart-data';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { parseMultipartJson } from '../common/utils/multipart-json';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RoleName } from '../auth/entities/role.entity';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { AuthUser } from '../auth/types/auth-user';
 import {
   OfficeCreateRequestDto,
   OfficeDto,
@@ -41,33 +52,72 @@ export class OfficesController {
   }
 
   @Post()
+  @Roles(RoleName.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: OfficeCreateRequestDto })
-  @UseInterceptors(FileInterceptor('photo', { limits: { fileSize: 10_485_760 } }))
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'photo', maxCount: 1 },
+        { name: 'data', maxCount: 1 },
+      ],
+      {
+        limits: { fileSize: 10_485_760 },
+      },
+    ),
+  )
   async create(
+    @CurrentUser() user: AuthUser,
     @Body('data') rawData: unknown,
-    @UploadedFile() photo?: Express.Multer.File,
+    @UploadedFiles() files?: MultipartFiles,
   ): Promise<OfficeDto> {
-    const request = await parseMultipartJson(rawData, OfficeCreateRequestDto);
-    return this.officesService.create(request, photo);
+    const request = await parseMultipartJson(
+      resolveMultipartDataField(rawData, files),
+      OfficeCreateRequestDto,
+    );
+    const photo = files?.photo?.[0];
+    return this.officesService.create(request, Number(user.sub), photo);
   }
 
   @Patch(':officeId')
+  @Roles(RoleName.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: OfficeUpdateRequestDto })
-  @UseInterceptors(FileInterceptor('photo', { limits: { fileSize: 10_485_760 } }))
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'photo', maxCount: 1 },
+        { name: 'data', maxCount: 1 },
+      ],
+      {
+        limits: { fileSize: 10_485_760 },
+      },
+    ),
+  )
   async update(
     @Param('officeId', ParseIntPipe) officeId: number,
+    @CurrentUser() user: AuthUser,
     @Body('data') rawData: unknown,
-    @UploadedFile() photo?: Express.Multer.File,
+    @UploadedFiles() files?: MultipartFiles,
   ): Promise<OfficeDto> {
-    const request = await parseMultipartJson(rawData, OfficeUpdateRequestDto);
-    return this.officesService.update(officeId, request, photo);
+    const request = await parseMultipartJson(
+      resolveMultipartDataField(rawData, files),
+      OfficeUpdateRequestDto,
+    );
+    const photo = files?.photo?.[0];
+    return this.officesService.update(officeId, request, user, photo);
   }
 
   @Delete(':officeId')
+  @Roles(RoleName.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async delete(@Param('officeId', ParseIntPipe) officeId: number): Promise<void> {
-    await this.officesService.delete(officeId);
+  async delete(
+    @Param('officeId', ParseIntPipe) officeId: number,
+    @CurrentUser() user: AuthUser,
+  ): Promise<void> {
+    await this.officesService.delete(officeId, user);
   }
 }

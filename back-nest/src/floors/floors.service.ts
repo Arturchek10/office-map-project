@@ -10,7 +10,9 @@ import { LayerEntity } from '../layers/entities/layer.entity';
 import { LayersService } from '../layers/layers.service';
 import { MarkerEntity } from '../markers/entities/marker.entity';
 import { OfficeEntity } from '../offices/entities/office.entity';
+import { OfficesService } from '../offices/offices.service';
 import { LocalFileStorageService } from '../storage/storage.service';
+import { AuthUser } from '../auth/types/auth-user';
 import {
   FloorCreateRequestDto,
   FloorPlanPatchRequestDto,
@@ -32,6 +34,7 @@ export class FloorsService {
     @InjectRepository(MarkerEntity)
     private readonly markerRepository: Repository<MarkerEntity>,
     private readonly layersService: LayersService,
+    private readonly officesService: OfficesService,
     private readonly storage: LocalFileStorageService,
   ) {}
 
@@ -58,9 +61,11 @@ export class FloorsService {
 
     const allMarkers = await this.markerRepository
       .createQueryBuilder('marker')
+      .leftJoinAndSelect('marker.photos', 'photo')
       .leftJoin('marker.layer', 'layer')
       .where('layer.floor_id = :floorId', { floorId })
       .orderBy('marker.id', 'ASC')
+      .addOrderBy('photo.sort_order', 'ASC')
       .getMany();
 
     return toFloorViewDto(floor, layers, baseLayer, allMarkers, this.storage);
@@ -69,6 +74,7 @@ export class FloorsService {
   async create(
     officeId: number,
     request: FloorCreateRequestDto,
+    user: AuthUser,
   ): Promise<FloorViewDto> {
     const office = await this.officeRepository.findOne({
       where: { id: officeId },
@@ -77,6 +83,7 @@ export class FloorsService {
     if (!office) {
       throw new NotFoundException(`Office with id=${officeId} not found`);
     }
+    this.officesService.assertCanManageLoadedOffice(office, user);
 
     if (await this.orderNumberExists(officeId, request.orderNumber)) {
       throw new ConflictException('Floor already exists');
@@ -98,8 +105,10 @@ export class FloorsService {
   async update(
     floorId: number,
     request: FloorUpdateRequestDto,
+    user: AuthUser,
   ): Promise<FloorViewDto> {
     const floor = await this.findEntity(floorId);
+    this.officesService.assertCanManageLoadedOffice(floor.office, user);
 
     if (
       request.orderNumber !== undefined &&
@@ -123,6 +132,7 @@ export class FloorsService {
   async updatePlan(
     floorId: number,
     request: FloorPlanPatchRequestDto,
+    user: AuthUser,
     photo?: Express.Multer.File,
   ): Promise<FloorViewDto> {
     if (request.removePhoto === true && photo && photo.size > 0) {
@@ -130,6 +140,7 @@ export class FloorsService {
     }
 
     const floor = await this.findEntity(floorId);
+    this.officesService.assertCanManageLoadedOffice(floor.office, user);
 
     if (request.removePhoto === true) {
       await this.storage.deleteImage(floor.photoKey);
@@ -137,15 +148,16 @@ export class FloorsService {
       floor.photoKey = undefined;
     } else if (photo && photo.size > 0) {
       await this.storage.deleteImage(floor.photoKey);
-      floor.photoKey = await this.storage.uploadImage(photo);
+      floor.photoKey = await this.storage.uploadImage(photo, 'floors');
     }
 
     await this.floorRepository.save(floor);
     return this.getFloorView(floorId);
   }
 
-  async delete(floorId: number): Promise<void> {
+  async delete(floorId: number, user: AuthUser): Promise<void> {
     const floor = await this.findEntity(floorId);
+    this.officesService.assertCanManageLoadedOffice(floor.office, user);
     await this.storage.deleteImage(floor.photoKey);
     await this.floorRepository.remove(floor);
   }

@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { RoleEntity } from './role.entity';
 
 @Entity('users')
 export class UserEntity {
@@ -14,6 +22,23 @@ export class UserEntity {
   @Column({ length: 255, select: false })
   password: string;
 
-  @Column({ length: 50 })
-  role: string;
+  @Column({ name: 'role_id', type: 'bigint' })
+  roleId: number;
+
+  @Column({ name: 'banned_at', type: 'timestamp', nullable: true })
+  bannedAt?: Date;
+
+  @Column({ name: 'banned_reason', type: 'varchar', length: 500, nullable: true })
+  bannedReason?: string;
+
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
+  deletedAt?: Date;
+
+  @ManyToOne(() => RoleEntity, (role) => role.users, {
+    eager: true,
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'role_id' })
+  role: RoleEntity;
 }

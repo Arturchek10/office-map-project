@@ -68,6 +68,7 @@ export type OfficeDto = {
   latitude: number | null;
   longitude: number | null;
   city: string | null;
+  createdByUserId: number | null;
   photoUrl: string | null;
   floorsCount: number;
 };
@@ -81,6 +82,7 @@ export type FloorShortDto = {
 export type OfficeShortDto = {
   id: number;
   name: string | null;
+  createdByUserId: number | null;
   startFloor: FloorShortDto | null;
   floors: FloorShortDto[];
 };

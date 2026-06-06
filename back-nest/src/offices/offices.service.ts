@@ -1,10 +1,13 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { RoleName } from '../auth/entities/role.entity';
+import { AuthUser } from '../auth/types/auth-user';
 import { LocalFileStorageService } from '../storage/storage.service';
 import {
   OfficeCreateRequestDto,
@@ -47,6 +50,7 @@ export class OfficesService {
 
   async create(
     request: OfficeCreateRequestDto,
+    createdByUserId: number,
     photo?: Express.Multer.File,
   ): Promise<OfficeDto> {
     if (await this.addressExists(request.address)) {
@@ -55,21 +59,22 @@ export class OfficesService {
       );
     }
 
-    let office = this.officeRepository.create({
+    const photoKey =
+      photo && photo.size > 0
+        ? await this.storage.uploadImage(photo, 'offices')
+        : undefined;
+
+    const office = this.officeRepository.create({
       name: request.name,
       address: request.address,
       latitude: request.latitude,
       longitude: request.longitude,
       city: request.city,
+      photoKey,
+      createdByUserId,
     });
 
-    office = await this.officeRepository.save(office);
-
-    if (photo && photo.size > 0) {
-      office.photoKey = await this.storage.uploadImage(photo);
-      office = await this.officeRepository.save(office);
-    }
-
+    await this.officeRepository.save(office);
     office.floors = [];
     return toOfficeDto(office, this.storage);
   }
@@ -77,9 +82,11 @@ export class OfficesService {
   async update(
     officeId: number,
     request: OfficeUpdateRequestDto,
+    user: AuthUser,
     photo?: Express.Multer.File,
   ): Promise<OfficeDto> {
     const office = await this.findEntity(officeId);
+    this.assertCanManageLoadedOffice(office, user);
 
     if (request.address) {
       const newAddress = request.address.trim();
@@ -105,7 +112,7 @@ export class OfficesService {
       office.photoKey = undefined;
     } else if (photo && photo.size > 0) {
       await this.storage.deleteImage(office.photoKey);
-      office.photoKey = await this.storage.uploadImage(photo);
+      office.photoKey = await this.storage.uploadImage(photo, 'offices');
     }
 
     const saved = await this.officeRepository.save(office);
@@ -113,10 +120,10 @@ export class OfficesService {
     return toOfficeDto(saved, this.storage);
   }
 
-  async delete(officeId: number): Promise<void> {
+  async delete(officeId: number, user: AuthUser): Promise<void> {
     const office = await this.findEntity(officeId);
-    await this.storage.deleteImage(office.photoKey);
-    await this.officeRepository.remove(office);
+    this.assertCanManageLoadedOffice(office, user);
+    await this.officeRepository.softDelete(office.id);
   }
 
   async exists(officeId: number): Promise<boolean> {
@@ -134,6 +141,25 @@ export class OfficesService {
     }
 
     return office;
+  }
+
+  async assertCanManageOffice(officeId: number, user: AuthUser): Promise<void> {
+    const office = await this.findEntity(officeId);
+    this.assertCanManageLoadedOffice(office, user);
+  }
+
+  assertCanManageLoadedOffice(office: OfficeEntity, user: AuthUser): void {
+    if (user.role === RoleName.SUPER_ADMIN) {
+      return;
+    }
+
+    if (user.role !== RoleName.ADMIN) {
+      throw new ForbiddenException('Only office admin can manage office');
+    }
+
+    if (!office.createdByUserId || Number(office.createdByUserId) !== Number(user.sub)) {
+      throw new ForbiddenException('You can manage only your own offices');
+    }
   }
 
   private async addressExists(address: string, exceptId?: number) {

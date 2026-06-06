@@ -4,10 +4,12 @@ import {
   IsBoolean,
   IsIn,
   IsNotEmpty,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
   Length,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { Point, PointDto } from '../../common/dto/point.dto';
@@ -27,6 +29,13 @@ export class CreateMarkerRequestDto {
   @ValidateNested()
   @Type(() => PointDto)
   position?: Point;
+
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  pricePerHour?: number;
 }
 
 export class MarkerMoveRequestDto {
@@ -58,9 +67,16 @@ export class UpdateMarkerRequestDto {
   @IsOptional()
   @IsObject()
   payload?: Record<string, unknown>;
+
+  @ApiPropertyOptional({ default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  pricePerHour?: number;
 }
 
-export type DescriptionPayloadDto =
+export type MarkerPayloadDto =
   | { text?: string | null; capacity?: number | null }
   | { text?: string | null; haveComputer?: boolean | null }
   | { text?: string | null };
@@ -69,6 +85,7 @@ export type MarkerShortDto = {
   id: number;
   position: Point | null;
   type: MarkerTypeValue | null;
+  pricePerHour: number;
 };
 
 export type MarkerDto = {
@@ -76,6 +93,9 @@ export type MarkerDto = {
   name: string | null;
   type: MarkerTypeValue | null;
   position: Point | null;
+  pricePerHour: number;
   uncomfortable: boolean;
-  payload: DescriptionPayloadDto | null;
+  payload: MarkerPayloadDto | null;
+  photos: { id: number; url: string }[];
+  photoUrls: string[];
 };

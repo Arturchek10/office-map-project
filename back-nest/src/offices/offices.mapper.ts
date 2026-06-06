@@ -22,6 +22,7 @@ export function toOfficeDto(
     latitude: office.latitude ?? null,
     longitude: office.longitude ?? null,
     city: office.city ?? null,
+    createdByUserId: office.createdByUserId ?? null,
     photoUrl: storage.presignGet(office.photoKey),
     floorsCount: office.floors?.length ?? 0,
   };
@@ -40,6 +41,7 @@ export function toOfficeShortDto(office: OfficeEntity): OfficeShortDto {
   return {
     id: office.id,
     name: office.name ?? null,
+    createdByUserId: office.createdByUserId ?? null,
     startFloor: startFloor ? toFloorShortDto(startFloor) : null,
     floors: floors.map(toFloorShortDto),
   };

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { RoleName } from '../entities/role.entity';
 
 export class SignUpRequestDto {
   @ApiProperty()
@@ -38,4 +39,11 @@ export class RefreshTokenRequestDto {
 export type AuthResponseDto = {
   token: string;
   refreshToken: string;
+};
+
+export type MeResponseDto = {
+  id: string;
+  email: string;
+  name: string;
+  role: RoleName;
 };
