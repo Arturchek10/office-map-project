@@ -17,7 +17,7 @@ public interface OfficeMapper {
             target = "floorsCount",
             expression = "java(office.getFloors() == null ? 0 : office.getFloors().size())"
     )
-    
+
     OfficeDto toDto(Office office);
 
 
