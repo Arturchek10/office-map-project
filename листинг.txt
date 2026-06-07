@@ -1,0 +1,317 @@
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { types } from 'pg';
+import { AppModule } from './app.module';
+import { ApiExceptionFilter } from './common/filters/api-exception.filter';
+
+types.setTypeParser(20, (value: string) => Number(value));
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    exposedHeaders: ['Content-Disposition'],
+  });
+
+  app.useGlobalFilters(new ApiExceptionFilter());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: false,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+        exposeUnsetFields: false,
+      },
+      exceptionFactory: (errors) =>
+        new BadRequestException({
+          message: 'Validation failed',
+          subErrors: errors.flatMap((error) =>
+            Object.values(error.constraints ?? {}).map((message) => ({
+              object: error.target?.constructor?.name ?? 'Request',
+              field: error.property,
+              rejectedValue: error.value,
+              message,
+            })),
+          ),
+        }),
+    }),
+  );
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Office Map API')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api', app, document);
+
+  await app.listen(8080);
+}
+
+void bootstrap();
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+import { UserEntity } from '../../auth/entities/user.entity';
+import { MarkerEntity } from '../../markers/entities/marker.entity';
+
+export enum BookingStatus {
+  ACTIVE = 'ACTIVE',
+  CANCELLED = 'CANCELLED',
+  COMPLETED = 'COMPLETED',
+}
+
+@Entity('bookings')
+export class BookingEntity {
+  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
+  id: number;
+
+  @Column({ name: 'marker_id', type: 'bigint' })
+  markerId: number;
+
+  @ManyToOne(() => MarkerEntity, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'marker_id' })
+  marker: MarkerEntity;
+
+  @Column({ name: 'user_id', type: 'bigint' })
+  userId: number;
+
+  @ManyToOne(() => UserEntity, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'user_id' })
+  user: UserEntity;
+
+  @Column({ name: 'start_time', type: 'timestamp' })
+  startTime: Date;
+
+  @Column({ name: 'end_time', type: 'timestamp' })
+  endTime: Date;
+
+  @Column({ name: 'price_per_hour', type: 'double precision', default: 0 })
+  pricePerHour: number;
+
+  @Column({ name: 'total_price', type: 'double precision', default: 0 })
+  totalPrice: number;
+
+  @Column({ length: 30 })
+  status: BookingStatus;
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  updatedAt: Date;
+}
+import { BrowserRouter, Route, Routes } from "react-router-dom"
+import HomePage from "@pages/HomePage"
+import OfficeMapEditor from "@pages/OfficeMapEditor"
+import AddFloor from "@pages/AddFloor"
+import AuthPage from "@pages/AuthPage"
+import RegisterPage from "@pages/RegisterPage"
+import AdminPanelPage from "@pages/AdminPanelPage"
+import MyBookingsPage from "@pages/MyBookingsPage"
+import BookingDetailsPage from "@pages/BookingDetailsPage"
+import { ProtectedRoute } from "@shared/components/ProtectedRoute"
+import { initAuth, profileRefreshRequested } from "@shared/store/auth"
+import { useEffect } from "react"
+import { useUnit } from "effector-react"
+import { ErrorSnackbar } from "@shared/ui/ErrorSnackbar"
+
+function App() {
+  const startAuth = useUnit(initAuth)
+  const refreshProfile = useUnit(profileRefreshRequested)
+
+  useEffect(() => {
+    startAuth() // вызов эффекта при монтировании компонента
+  }, [startAuth])
+
+  useEffect(() => {
+    const refreshOnFocus = () => refreshProfile()
+    const refreshOnVisible = () => {
+      if (document.visibilityState === "visible") {
+        refreshProfile()
+      }
+    }
+
+    window.addEventListener("focus", refreshOnFocus)
+    document.addEventListener("visibilitychange", refreshOnVisible)
+
+    return () => {
+      window.removeEventListener("focus", refreshOnFocus)
+      document.removeEventListener("visibilitychange", refreshOnVisible)
+    }
+  }, [refreshProfile])
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/office/:officeId/floor/:floorId"
+          element={
+            <ProtectedRoute>
+              <OfficeMapEditor />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/office/:officeId/createfloor"
+          element={
+            <ProtectedRoute>
+              <AddFloor />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bookings"
+          element={
+            <ProtectedRoute>
+              <MyBookingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bookings/:bookingId"
+          element={
+            <ProtectedRoute>
+              <BookingDetailsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/adminpanel"
+          element={
+            <ProtectedRoute>
+              <AdminPanelPage />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+      <ErrorSnackbar />
+    </BrowserRouter>
+  )
+}
+
+export default App
+import { Module } from '@nestjs/common';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { join } from 'path';
+import { AdminModule } from './admin/admin.module';
+import { AuthModule } from './auth/auth.module';
+import { BookingsModule } from './bookings/bookings.module';
+import { FloorsModule } from './floors/floors.module';
+import { FurnitureModule } from './furniture/furniture.module';
+import { LayersModule } from './layers/layers.module';
+import { MarkersModule } from './markers/markers.module';
+import { OfficesModule } from './offices/offices.module';
+import { SeedModule } from './seed/seed.module';
+import { StorageModule } from './storage/storage.module';
+
+@Module({
+  imports: [
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: 'localhost',
+      port: 5432,
+      username: 'postgres',
+      password: 'postgres',
+      database: 'map_service',
+      autoLoadEntities: true,
+      synchronize: true,
+      logging: false,
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
+    StorageModule,
+    AuthModule,
+    SeedModule,
+    AdminModule,
+    OfficesModule,
+    FloorsModule,
+    LayersModule,
+    MarkersModule,
+    FurnitureModule,
+    BookingsModule,
+  ],
+})
+export class AppModule {}
+import {
+  Column,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { UserEntity } from '../../auth/entities/user.entity';
+import { FloorEntity } from '../../floors/entities/floor.entity';
+
+@Entity('office')
+export class OfficeEntity {
+  @PrimaryGeneratedColumn('increment', { type: 'bigint' })
+  id: number;
+
+  @Column({ type: 'varchar', nullable: true, length: 255 })
+  name?: string;
+
+  @Column({ type: 'varchar', nullable: true, unique: true, length: 255 })
+  address?: string;
+
+  @Column({ type: 'varchar', nullable: true, length: 255 })
+  city?: string;
+
+  @Column({ type: 'double precision', nullable: true })
+  latitude?: number;
+
+  @Column({ type: 'double precision', nullable: true })
+  longitude?: number;
+
+  @Column({ name: 'photo_key', type: 'varchar', nullable: true, length: 1024 })
+  photoKey?: string | null;
+
+  @Column({ name: 'created_by_user_id', type: 'bigint', nullable: true })
+  createdByUserId?: number;
+
+  @ManyToOne(() => UserEntity, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'created_by_user_id' })
+  createdByUser?: UserEntity;
+
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
+  deletedAt?: Date | null;
+
+  @OneToMany(() => FloorEntity, (floor) => floor.office, {
+    cascade: true,
+  })
+  floors: FloorEntity[];
+}
