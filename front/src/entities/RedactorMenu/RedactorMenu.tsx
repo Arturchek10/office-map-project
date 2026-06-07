@@ -177,7 +177,7 @@ export default function RedactorMenu({
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={isOpen} onClose={onClose} fullWidth maxWidth="sm" slotProps={{paper: {style: {marginTop: 50}}}}>
       <DialogTitle>Редактирование точки</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2}>

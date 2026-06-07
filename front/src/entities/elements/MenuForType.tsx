@@ -42,7 +42,7 @@ export default function PositionedMenu({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Тип точки</DialogTitle>
+      <DialogTitle>Тип маркера</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={1}>
           {markerTypes.map((item) => (

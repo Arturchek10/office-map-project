@@ -76,10 +76,10 @@ export default function PositionedMenu({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Точка на плане</DialogTitle>
+      <DialogTitle>Маркер на плане</DialogTitle>
       <DialogContent>
         <Typography variant="body2" color="text.secondary">
-          Выберите действие для выбранной точки.
+          Выберите действие для выбранного маркера.
         </Typography>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>

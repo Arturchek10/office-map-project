@@ -693,7 +693,7 @@ export default function OfficeMap() {
     >
       <div className="flex relative w-full gap-12 min-h-16 items-center">
         <Fade in={!!currentFloorImage} timeout={300} ref={ref}>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <MarkerTypeFilter onSelectLayer={onSelectLayerFunc} />
           </div>
         </Fade>
@@ -790,7 +790,7 @@ export default function OfficeMap() {
             unmountOnExit
             ref={btnRef}
           >
-            <div ref={btnRef} className="absolute right-[20px]">
+            <div ref={btnRef} className="absolute right-[-55px]">
               <AddingFurnitureButton
                 isPanelOpen={panelOpen}
                 onClick={() => {
@@ -991,6 +991,7 @@ export default function OfficeMap() {
               await getFloorById(currentFloor.id);
             }
           }}
+          
         />
       )}
       {/* форма бронирования маркера (время\дата) */}

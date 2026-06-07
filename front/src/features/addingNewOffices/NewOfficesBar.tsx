@@ -190,7 +190,7 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
         maxWidth="md"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 2 },
+          sx: { borderRadius: 2, marginTop: 12},
         }}
       >
         <DialogTitle>Создать офис</DialogTitle>

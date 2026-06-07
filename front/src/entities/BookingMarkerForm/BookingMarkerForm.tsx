@@ -223,7 +223,7 @@ export default function BookingMarkerForm({
               <>
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="subtitle2" color="text.secondary">
-                  Фото точки
+                  Фото маркера
                 </Typography>
                 <ImageList cols={3} gap={8}>
                   {markerPhotos.map((url) => (

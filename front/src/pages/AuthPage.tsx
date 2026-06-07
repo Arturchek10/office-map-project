@@ -69,7 +69,6 @@ function AuthPage() {
             gap: 1,
           }}
         >
-          <T1logo style={{ width: 100, height: 50, color: "#2F80ED" }} />
           <Typography
             variant="h4"
             sx={{ fontWeight: "bold", color: "#2F80ED" }}
