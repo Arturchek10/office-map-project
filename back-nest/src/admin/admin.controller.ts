@@ -148,6 +148,7 @@ export class AdminController {
   }
 
   @Post('users/:userId/block')
+  @HttpCode(HttpStatus.OK)
   @Roles(RoleName.SUPER_ADMIN)
   blockUser(
     @Param('userId', ParseIntPipe) userId: number,
@@ -157,6 +158,7 @@ export class AdminController {
   }
 
   @Post('users/:userId/unblock')
+  @HttpCode(HttpStatus.OK)
   @Roles(RoleName.SUPER_ADMIN)
   unblockUser(
     @Param('userId', ParseIntPipe) userId: number,
@@ -175,6 +177,7 @@ export class AdminController {
   }
 
   @Post('admins/:adminId/block-with-offices')
+  @HttpCode(HttpStatus.OK)
   @Roles(RoleName.SUPER_ADMIN)
   blockAdminWithOffices(
     @Param('adminId', ParseIntPipe) adminId: number,
@@ -184,6 +187,7 @@ export class AdminController {
   }
 
   @Post('admins/:adminId/unblock-with-offices')
+  @HttpCode(HttpStatus.OK)
   @Roles(RoleName.SUPER_ADMIN)
   unblockAdminWithOffices(
     @Param('adminId', ParseIntPipe) adminId: number,

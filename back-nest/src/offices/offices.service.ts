@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -106,18 +107,48 @@ export class OfficesService {
       office.name = request.name;
     }
 
-    if (request.removePhoto === true) {
-      await this.storage.deleteImage(office.photoKey);
-      await this.officeRepository.update(officeId, { photoKey: () => 'NULL' });
-      office.photoKey = undefined;
-    } else if (photo && photo.size > 0) {
-      await this.storage.deleteImage(office.photoKey);
-      office.photoKey = await this.storage.uploadImage(photo, 'offices');
+    if (request.removePhoto === true && photo && photo.size > 0) {
+      throw new BadRequestException('Cannot remove and upload photo at once');
     }
 
-    const saved = await this.officeRepository.save(office);
-    saved.floors = office.floors ?? [];
-    return toOfficeDto(saved, this.storage);
+    const oldPhotoKey = office.photoKey;
+    const nextPhotoKey =
+      photo && photo.size > 0
+        ? await this.storage.uploadImage(photo, 'offices')
+        : undefined;
+
+    if (request.removePhoto === true) {
+      office.photoKey = null;
+    } else if (nextPhotoKey) {
+      office.photoKey = nextPhotoKey;
+    }
+
+    const updateData: Partial<OfficeEntity> = {};
+    if (request.address) {
+      updateData.address = office.address;
+    }
+    if (request.name !== undefined) {
+      updateData.name = office.name;
+    }
+    if (request.removePhoto === true || nextPhotoKey) {
+      updateData.photoKey = office.photoKey;
+    }
+
+    try {
+      if (Object.keys(updateData).length > 0) {
+        await this.officeRepository.update(officeId, updateData);
+      }
+
+      if (request.removePhoto === true || nextPhotoKey) {
+        await this.storage.deleteImage(oldPhotoKey);
+      }
+
+      const saved = await this.findEntity(officeId);
+      return toOfficeDto(saved, this.storage);
+    } catch (error) {
+      await this.storage.deleteImage(nextPhotoKey);
+      throw error;
+    }
   }
 
   async delete(officeId: number, user: AuthUser): Promise<void> {

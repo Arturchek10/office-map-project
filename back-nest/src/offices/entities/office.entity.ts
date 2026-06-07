@@ -31,7 +31,7 @@ export class OfficeEntity {
   longitude?: number;
 
   @Column({ name: 'photo_key', type: 'varchar', nullable: true, length: 1024 })
-  photoKey?: string;
+  photoKey?: string | null;
 
   @Column({ name: 'created_by_user_id', type: 'bigint', nullable: true })
   createdByUserId?: number;
@@ -44,7 +44,7 @@ export class OfficeEntity {
   createdByUser?: UserEntity;
 
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
-  deletedAt?: Date;
+  deletedAt?: Date | null;
 
   @OneToMany(() => FloorEntity, (floor) => floor.office, {
     cascade: true,

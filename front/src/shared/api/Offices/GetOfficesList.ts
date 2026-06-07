@@ -2,9 +2,43 @@ import { createStore, createEffect } from "effector";
 import { TOffice } from "@entities/Office/type/office";
 import { addOfficeFx, updateOfficeFx } from "./AddOffice";
 import { deleteOfficeFx } from "./DeleteOffice";
+import { getMyAdminOffices } from "@shared/api/Admin";
+import { $user } from "@shared/store/auth";
+import type { AdminOffice } from "@shared/types/admin";
 import { apiGet } from "@shared/utils/api";
 
+const toOfficeListItem = (office: AdminOffice): TOffice => ({
+  id: office.id,
+  name: office.name ?? "",
+  latitude: office.latitude ?? 0,
+  longitude: office.longitude ?? 0,
+  photoUrl: office.photoUrl,
+  city: office.city ?? "",
+  address: office.address ?? "",
+  createdByUserId: office.createdByUserId,
+  floorsCount: office.floorsCount,
+});
+
+const fetchAllMyAdminOffices = async (): Promise<TOffice[]> => {
+  const offices: TOffice[] = [];
+  let cursor: number | null = null;
+  let hasMore = true;
+
+  while (hasMore) {
+    const data = await getMyAdminOffices({ cursor, size: 100 });
+    offices.push(...data.items.map(toOfficeListItem));
+    cursor = data.nextCursor;
+    hasMore = data.hasMore && cursor !== null;
+  }
+
+  return offices;
+};
+
 export const fetchOfficesFx = createEffect<void, TOffice[], Error>(async () => {
+  if ($user.getState()?.role === "ADMIN") {
+    return fetchAllMyAdminOffices();
+  }
+
   // мок
   const USE_MOCK = false;
   if (USE_MOCK) {

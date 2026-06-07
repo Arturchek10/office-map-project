@@ -1,5 +1,8 @@
 import Header from "@entities/Header/Header"
 import NavBar from "@entities/NavBar/NavBar"
+import { drawerWidth } from "@features/OfficesBar/config/config"
+import EventSeatIcon from "@mui/icons-material/EventSeat"
+import OpenInNewIcon from "@mui/icons-material/OpenInNew"
 import {
   Alert,
   Box,
@@ -10,12 +13,11 @@ import {
   Stack,
   Typography,
 } from "@mui/material"
-import EventSeatIcon from "@mui/icons-material/EventSeat"
-import OpenInNewIcon from "@mui/icons-material/OpenInNew"
-import { drawerWidth } from "@features/OfficesBar/config/config"
 import { getMyBookings, type Booking } from "@shared/api/Bookings"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+
+const PAGE_SIZE = 20
 
 const formatDateTime = (value: string) =>
   new Date(value).toLocaleString("ru-RU", {
@@ -29,22 +31,39 @@ const formatDateTime = (value: string) =>
 export default function MyBookingsPage() {
   const navigate = useNavigate()
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [nextCursor, setNextCursor] = useState<number | null>(null)
+  const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState("")
 
-  useEffect(() => {
-    getMyBookings()
-      .then(setBookings)
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : "Не удалось загрузить аренды"),
+  const loadBookings = useCallback(async (cursor: number | null = null) => {
+    cursor ? setLoadingMore(true) : setLoading(true)
+    setError("")
+
+    try {
+      const data = await getMyBookings({ cursor, size: PAGE_SIZE })
+      setBookings((prev) => (cursor ? [...prev, ...data.items] : data.items))
+      setNextCursor(data.nextCursor)
+      setHasMore(data.hasMore)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Не удалось загрузить аренды",
       )
-      .finally(() => setLoading(false))
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+    }
   }, [])
+
+  useEffect(() => {
+    void loadBookings()
+  }, [loadBookings])
 
   return (
     <>
       <Header officeName="Мои аренды" />
-      <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f5f7fb" }}>
+      <Box sx={{ display: "flex", height: "100vh", bgcolor: "#f5f7fb" }}>
         <CssBaseline />
         <NavBar onToggleOffices={() => undefined} />
         <Box
@@ -55,9 +74,11 @@ export default function MyBookingsPage() {
             px: 4,
             pb: 4,
             width: "100%",
+            height: "100vh",
+            overflowY: "auto",
           }}
         >
-          <Stack spacing={3}>
+          <Stack spacing={3} sx={{ maxWidth: 980 }}>
             <Stack direction="row" alignItems="center" spacing={1.5}>
               <EventSeatIcon color="primary" />
               <Typography variant="h4" fontWeight={700}>
@@ -76,8 +97,7 @@ export default function MyBookingsPage() {
             {!loading && !error && bookings.length === 0 && (
               <Paper sx={{ p: 4, borderRadius: 1 }}>
                 <Typography color="text.secondary">
-                  У вас пока нет аренд. Откройте офис, выберите рабочее место и
-                  забронируйте удобный интервал.
+                  У вас пока нет аренд.
                 </Typography>
               </Paper>
             )}
@@ -98,7 +118,7 @@ export default function MyBookingsPage() {
                         {booking.place.floorName}
                       </Typography>
                       <Typography color="text.secondary">
-                        Место №{booking.markerId}
+                        Маркер №{booking.markerId}
                         {booking.place.marker.name
                           ? `, ${booking.place.marker.name}`
                           : ""}
@@ -108,7 +128,11 @@ export default function MyBookingsPage() {
                         {formatDateTime(booking.endTime)}
                       </Typography>
                       <Typography variant="body2" fontWeight={700}>
-                        Стоимость: {Number(booking.totalPrice ?? 0).toLocaleString("ru-RU")} ₽
+                        Стоимость:{" "}
+                        {Number(booking.totalPrice ?? 0).toLocaleString(
+                          "ru-RU",
+                        )}{" "}
+                        ₽
                       </Typography>
                     </Stack>
                     <Button
@@ -121,6 +145,17 @@ export default function MyBookingsPage() {
                   </Stack>
                 </Paper>
               ))}
+
+            {!loading && !error && hasMore && (
+              <Button
+                variant="outlined"
+                disabled={loadingMore}
+                onClick={() => void loadBookings(nextCursor)}
+                sx={{ alignSelf: "center" }}
+              >
+                {loadingMore ? "Загрузка..." : "Показать еще"}
+              </Button>
+            )}
           </Stack>
         </Box>
       </Box>

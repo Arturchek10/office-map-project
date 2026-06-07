@@ -8,16 +8,16 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { AuthUser } from '../auth/types/auth-user';
-import { LocalFileStorageService } from '../storage/storage.service';
-import { MarkerType } from '../markers/entities/marker.entity';
-import { MarkerEntity } from '../markers/entities/marker.entity';
+import { CursorResponse } from '../common/dto/cursor-response.dto';
+import { MarkerEntity, MarkerType } from '../markers/entities/marker.entity';
 import { toMarkerDto } from '../markers/markers.mapper';
+import { LocalFileStorageService } from '../storage/storage.service';
 import {
   AvailableMarkersDto,
   BookingDto,
   BusyIntervalDto,
-  CreateBulkBookingRequestDto,
   CreateBookingRequestDto,
+  CreateBulkBookingRequestDto,
 } from './dto/booking.dto';
 import { BookingEntity, BookingStatus } from './entities/booking.entity';
 
@@ -44,10 +44,18 @@ export class BookingsService {
       relations: { layer: { floor: { office: true } } },
     });
     if (!marker) {
-      throw new NotFoundException(`Marker with id=${request.markerId} not found`);
+      throw new NotFoundException(
+        `Marker with id=${request.markerId} not found`,
+      );
     }
-    if (![MarkerType.WORKSPACE, MarkerType.ROOM].includes(marker.type as MarkerType)) {
-      throw new BadRequestException('Only workspace and room markers can be booked');
+    if (
+      ![MarkerType.WORKSPACE, MarkerType.ROOM].includes(
+        marker.type as MarkerType,
+      )
+    ) {
+      throw new BadRequestException(
+        'Only workspace and room markers can be booked',
+      );
     }
 
     const hasConflict = await this.bookingRepository
@@ -102,12 +110,18 @@ export class BookingsService {
 
     const floorIds = new Set(markers.map((marker) => marker.layer?.floorId));
     if (floorIds.size !== 1) {
-      throw new BadRequestException('Bulk booking is allowed only within one floor');
+      throw new BadRequestException(
+        'Bulk booking is allowed only within one floor',
+      );
     }
 
     markers.forEach((marker) => this.validateMarkerBookable(marker));
 
-    const busyMarkerIds = await this.findBusyMarkerIds(markerIds, startTime, endTime);
+    const busyMarkerIds = await this.findBusyMarkerIds(
+      markerIds,
+      startTime,
+      endTime,
+    );
     if (busyMarkerIds.length > 0) {
       throw new ConflictException(
         `Some places are already booked: ${busyMarkerIds.join(', ')}`,
@@ -143,11 +157,14 @@ export class BookingsService {
     activeOnly: boolean,
   ): Promise<BookingDto[]> {
     const query = this.bookingQuery()
+      .withDeleted()
       .where('booking.user_id = :userId', { userId })
       .orderBy('booking.start_time', 'DESC');
 
     if (activeOnly) {
-      query.andWhere('booking.status = :status', { status: BookingStatus.ACTIVE });
+      query.andWhere('booking.status = :status', {
+        status: BookingStatus.ACTIVE,
+      });
       query.andWhere('booking.end_time >= :now', { now: new Date() });
     }
 
@@ -155,8 +172,44 @@ export class BookingsService {
     return bookings.flatMap((booking) => this.toBookingListItemDto(booking));
   }
 
+  async getUserBookingsPage(
+    userId: number,
+    activeOnly: boolean,
+    cursor: string | undefined,
+    size: number,
+  ): Promise<CursorResponse<BookingDto>> {
+    const safeSize = this.safeSize(size);
+    const query = this.bookingQuery()
+      .withDeleted()
+      .where('booking.user_id = :userId', { userId })
+      .andWhere('booking.id < :cursor', {
+        cursor: this.parseCursor(cursor),
+      })
+      .orderBy('booking.id', 'DESC')
+      .take(safeSize + 1);
+
+    if (activeOnly) {
+      query.andWhere('booking.status = :status', {
+        status: BookingStatus.ACTIVE,
+      });
+      query.andWhere('booking.end_time >= :now', { now: new Date() });
+    }
+
+    const rows = await query.getMany();
+    const dtos = rows.flatMap((booking) => this.toBookingListItemDto(booking));
+    const visibleItems = dtos.slice(0, safeSize);
+
+    return {
+      items: visibleItems,
+      nextCursor:
+        dtos.length > safeSize ? visibleItems.at(-1)?.id ?? null : null,
+      hasMore: dtos.length > safeSize,
+    };
+  }
+
   async getBooking(bookingId: number, user: AuthUser): Promise<BookingDto> {
     const booking = await this.bookingQuery()
+      .withDeleted()
       .where('booking.id = :bookingId', { bookingId })
       .getOne();
 
@@ -275,20 +328,28 @@ export class BookingsService {
     const markerIds = markers.map((marker) => marker.id);
     if (markerIds.length === 0) return [];
 
-    return this.bookingRepository.find({
-      where: {
-        markerId: In(markerIds),
-        status: BookingStatus.ACTIVE,
-      },
-      order: { startTime: 'ASC' },
-    }).then((bookings) =>
-      bookings.filter(
-        (booking) => booking.startTime < endTime && booking.endTime > startTime,
-      ),
-    );
+    return this.bookingRepository
+      .find({
+        where: {
+          markerId: In(markerIds),
+          status: BookingStatus.ACTIVE,
+        },
+        order: { startTime: 'ASC' },
+        withDeleted: true,
+      })
+      .then((bookings) =>
+        bookings.filter(
+          (booking) =>
+            booking.startTime < endTime && booking.endTime > startTime,
+        ),
+      );
   }
 
-  private validateBookingTime(markerId: number, startTime: Date, endTime: Date) {
+  private validateBookingTime(
+    markerId: number,
+    startTime: Date,
+    endTime: Date,
+  ) {
     if (!Number.isFinite(markerId)) {
       throw new BadRequestException('Marker is required');
     }
@@ -323,7 +384,11 @@ export class BookingsService {
   }
 
   private validateMarkerBookable(marker: MarkerEntity): void {
-    if (![MarkerType.WORKSPACE, MarkerType.ROOM].includes(marker.type as MarkerType)) {
+    if (
+      ![MarkerType.WORKSPACE, MarkerType.ROOM].includes(
+        marker.type as MarkerType,
+      )
+    ) {
       throw new BadRequestException(
         `Marker with id=${marker.id} cannot be booked`,
       );
@@ -366,6 +431,7 @@ export class BookingsService {
 
   private async getBookingById(bookingId: number): Promise<BookingDto> {
     const booking = await this.bookingQuery()
+      .withDeleted()
       .where('booking.id = :bookingId', { bookingId })
       .getOne();
 
@@ -377,6 +443,17 @@ export class BookingsService {
 
   private parseDate(value: string): Date {
     return new Date(value);
+  }
+
+  private parseCursor(cursor?: string): number {
+    const parsed = Number(cursor ?? Number.MAX_SAFE_INTEGER);
+    return Number.isFinite(parsed) && parsed > 0
+      ? parsed
+      : Number.MAX_SAFE_INTEGER;
+  }
+
+  private safeSize(size: number): number {
+    return Math.max(1, Math.min(Number.isFinite(size) ? size : 20, 100));
   }
 
   private parseDayStart(value: string): Date {

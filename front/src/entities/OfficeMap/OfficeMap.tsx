@@ -275,6 +275,11 @@ export default function OfficeMap() {
     setBulkBookingError("");
     setBulkBookingSuccess("");
 
+    if (!isBulkBookingReady) {
+      setBulkBookingError("Сначала проверьте доступность маркеров");
+      return;
+    }
+
     if (selectedBulkMarkerIds.length === 0) {
       setBulkBookingError("Выберите хотя бы одно место на схеме");
       return;
@@ -917,7 +922,6 @@ export default function OfficeMap() {
                 selectedMarkerId={clickedMarker?.id ?? null}
                 activeOfficeId={currentFloor.id}
                 onShowDeleteAlert={onShowDeleteAlert}
-                openBookingForm={() => setIsBookingFormOpen(true)}
                 toggleBulkBooking={() => {
                   if (clickedMarker?.id) {
                     toggleBulkMarker(clickedMarker.id);

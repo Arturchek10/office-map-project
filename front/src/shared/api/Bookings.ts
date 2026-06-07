@@ -1,5 +1,6 @@
 import { apiGet, apiPost } from "@shared/utils/api"
 import type { MarkerResponse, MarkerTypes } from "@shared/types/marker"
+import type { CursorResponse } from "@shared/types/admin"
 
 export type BookingPlace = {
   officeId: number
@@ -70,8 +71,23 @@ export const getAvailableMarkersByFloor = async (
   return Array.isArray(data) ? data : data.markers ?? []
 }
 
-export const getMyBookings = async (activeOnly = false): Promise<Booking[]> => {
-  const res = await apiGet(`/api/v1/bookings/my?activeOnly=${activeOnly}`)
+export const getMyBookings = async (
+  params: {
+    activeOnly?: boolean
+    cursor?: number | null
+    size?: number
+  } = {},
+): Promise<CursorResponse<Booking>> => {
+  const query = new URLSearchParams({
+    activeOnly: String(params.activeOnly ?? false),
+    size: String(params.size ?? 20),
+  })
+
+  if (params.cursor) {
+    query.set("cursor", String(params.cursor))
+  }
+
+  const res = await apiGet(`/api/v1/bookings/my?${query.toString()}`)
   return res.json()
 }
 

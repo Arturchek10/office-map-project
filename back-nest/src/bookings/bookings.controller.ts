@@ -16,6 +16,7 @@ import { RoleName } from '../auth/entities/role.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AuthUser } from '../auth/types/auth-user';
+import { CursorResponse } from '../common/dto/cursor-response.dto';
 import {
   AvailableMarkersDto,
   BookingDto,
@@ -58,8 +59,15 @@ export class BookingsController {
     @CurrentUser() user: AuthUser,
     @Query('activeOnly', new ParseBoolPipe({ optional: true }))
     activeOnly = false,
-  ): Promise<BookingDto[]> {
-    return this.bookingsService.getUserBookings(Number(user.sub), activeOnly);
+    @Query('cursor') cursor?: string,
+    @Query('size') size = '20',
+  ): Promise<CursorResponse<BookingDto>> {
+    return this.bookingsService.getUserBookingsPage(
+      Number(user.sub),
+      activeOnly,
+      cursor,
+      Number(size),
+    );
   }
 
   @Get('marker/:markerId/day')

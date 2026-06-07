@@ -26,13 +26,13 @@ export class UserEntity {
   roleId: number;
 
   @Column({ name: 'banned_at', type: 'timestamp', nullable: true })
-  bannedAt?: Date;
+  bannedAt?: Date | null;
 
   @Column({ name: 'banned_reason', type: 'varchar', length: 500, nullable: true })
-  bannedReason?: string;
+  bannedReason?: string | null;
 
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
-  deletedAt?: Date;
+  deletedAt?: Date | null;
 
   @ManyToOne(() => RoleEntity, (role) => role.users, {
     eager: true,

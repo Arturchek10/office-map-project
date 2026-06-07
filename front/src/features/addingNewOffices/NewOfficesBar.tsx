@@ -187,15 +187,18 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
       <Dialog
         open={open}
         onClose={handleClose}
-        maxWidth="md"
+        maxWidth="sm"
         fullWidth
         PaperProps={{
-          sx: { borderRadius: 2, marginTop: 12},
+          sx: {
+            borderRadius: 2,
+            maxHeight: "calc(100vh - 96px)",
+          },
         }}
       >
         <DialogTitle>Создать офис</DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={2.5}>
+        <DialogContent dividers sx={{ overflow: "hidden", py: 1.5 }}>
+          <Stack spacing={1.5}>
             {formError && <Alert severity="error">{formError}</Alert>}
 
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -255,7 +258,7 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
 
               <Box
                 sx={{
-                  height: 320,
+                  height: 210,
                   overflow: "hidden",
                   borderRadius: 1,
                   border: "1px solid",
@@ -301,7 +304,7 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
             </Button>
           </Stack>
         </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
+        <DialogActions sx={{ px: 3, py: 1.5 }}>
           <Button onClick={handleClose} disabled={isSubmitting}>
             Отмена
           </Button>

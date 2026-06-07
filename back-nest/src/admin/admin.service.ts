@@ -17,6 +17,7 @@ import {
   toCursorResponse,
 } from '../common/dto/cursor-response.dto';
 import { OfficeEntity } from '../offices/entities/office.entity';
+import { LocalFileStorageService } from '../storage/storage.service';
 import {
   AdminOfficeDto,
   AdminRequestCreateDto,
@@ -50,6 +51,7 @@ export class AdminService {
     @InjectRepository(RoleEntity)
     private readonly roleRepository: Repository<RoleEntity>,
     private readonly bookingsService: BookingsService,
+    private readonly storage: LocalFileStorageService,
   ) {}
 
   async createAdmin(request: CreateAdminDto): Promise<UserListItemDto> {
@@ -262,8 +264,8 @@ export class AdminService {
     restoreOffices = false,
   ): Promise<UserListItemDto> {
     const user = await this.findUser(userId);
-    user.bannedAt = undefined;
-    user.bannedReason = undefined;
+    user.bannedAt = null;
+    user.bannedReason = null;
     await this.userRepository.save(user);
 
     if (restoreOffices || user.role.name === RoleName.ADMIN) {
@@ -419,6 +421,10 @@ export class AdminService {
       name: office.name ?? null,
       address: office.address ?? null,
       city: office.city ?? null,
+      latitude: office.latitude ?? null,
+      longitude: office.longitude ?? null,
+      photoUrl: this.storage.presignGet(office.photoKey),
+      createdByUserId: office.createdByUserId ?? null,
       deletedAt: office.deletedAt ?? null,
       floorsCount: office.floors?.length ?? 0,
     };

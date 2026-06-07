@@ -8,10 +8,8 @@ import {
   Typography,
 } from "@mui/material";
 import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditIcon from "@mui/icons-material/Edit";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import RemoveShoppingCartIcon from "@mui/icons-material/RemoveShoppingCart";
 import { deleteMarkerFx } from "@shared/store/markers";
 import { getFloorByIdFx } from "@shared/store/floor";
@@ -25,7 +23,7 @@ type PositionMenuProps = {
   selectedMarkerId: number | null;
   activeOfficeId: number;
   onShowDeleteAlert: () => void;
-  openBookingForm: () => void;
+  openBookingForm?: () => void;
   toggleBulkBooking?: () => void;
   canEdit: boolean;
   canBook: boolean;
@@ -40,7 +38,6 @@ export default function PositionedMenu({
   selectedMarkerId,
   activeOfficeId,
   onShowDeleteAlert,
-  openBookingForm,
   toggleBulkBooking,
   canEdit,
   canBook,
@@ -49,11 +46,6 @@ export default function PositionedMenu({
 }: PositionMenuProps) {
   const open = Boolean(anchorForCircle);
   const [getFloorById] = useUnit([getFloorByIdFx]);
-
-  const handleBooking = () => {
-    onClose();
-    openBookingForm();
-  };
 
   const handleBulk = () => {
     onClose();
@@ -98,14 +90,9 @@ export default function PositionedMenu({
             </Button>
           )}
 
-          {canBook && (
-            <Button
-              fullWidth
-              variant={canAddToBulk ? "outlined" : "contained"}
-              startIcon={canAddToBulk ? <InfoOutlinedIcon /> : <CalendarMonthIcon />}
-              onClick={handleBooking}
-            >
-              {canAddToBulk ? "Детально" : "Забронировать"}
+          {canBook && !canAddToBulk && (
+            <Button fullWidth variant="outlined" disabled>
+              Сначала проверьте доступность
             </Button>
           )}
 

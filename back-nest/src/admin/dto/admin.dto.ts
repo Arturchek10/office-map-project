@@ -95,6 +95,10 @@ export type AdminOfficeDto = {
   name: string | null;
   address: string | null;
   city: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  photoUrl: string | null;
+  createdByUserId: number | null;
   deletedAt: Date | null;
   floorsCount: number;
 };
