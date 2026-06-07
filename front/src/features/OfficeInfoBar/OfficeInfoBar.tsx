@@ -35,6 +35,7 @@ interface OfficeInfoBarProps {
   open: boolean;
   activeOfficeId: number | null;
   activeOffice: TOffice | null;
+  openEditByDefault?: boolean;
   onClose: () => void;
 }
 
@@ -42,6 +43,7 @@ export default function OfficeInfoBar({
   open,
   activeOfficeId,
   activeOffice,
+  openEditByDefault = false,
   onClose,
 }: OfficeInfoBarProps) {
   const navigate = useNavigate();
@@ -63,13 +65,19 @@ export default function OfficeInfoBar({
   }, [open, activeOfficeId]);
 
   useEffect(() => {
-    setEditOpen(false);
+    setEditOpen(openEditByDefault);
     setEditName(activeOffice?.name ?? "");
     setEditAddress(activeOffice?.address ?? "");
     setEditPhoto(null);
     setRemovePhoto(false);
     setSaveError("");
-  }, [activeOffice?.id, activeOffice?.name, activeOffice?.address, open]);
+  }, [
+    activeOffice?.id,
+    activeOffice?.name,
+    activeOffice?.address,
+    open,
+    openEditByDefault,
+  ]);
 
   const currentOffice = office?.id === activeOfficeId ? office : null;
   const photoUrl = getImageUrl(activeOffice?.photoUrl);

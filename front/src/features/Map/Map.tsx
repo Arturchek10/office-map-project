@@ -19,7 +19,8 @@ import {
 interface MapOfficeProps {
   offices: TOffice[];
   activeOfficeId: number | null;
-  setActiveOfficeId: (id: number | null) => void;
+  onOfficeClick: (officeId: number) => void;
+  onOfficeContextMenu?: (officeId: number) => void;
 }
 
 type YMapLike = {
@@ -128,7 +129,8 @@ function MapSearchOverlay({
 function MapOffice({
   offices,
   activeOfficeId,
-  setActiveOfficeId,
+  onOfficeClick,
+  onOfficeContextMenu,
 }: MapOfficeProps) {
   const mapInstanceRef = React.useRef<YMapLike | null>(null);
 
@@ -178,7 +180,18 @@ function MapOffice({
                   preset: "islands#dotIcon",
                   iconColor: isActive ? "#2F80ED" : "#c4c4c4",
                 }}
-                onClick={() => setActiveOfficeId(isActive ? null : office.id)}
+                onClick={() => onOfficeClick(office.id)}
+                onContextMenu={(event: unknown) => {
+                  const yandexEvent = event as {
+                    preventDefault?: () => void;
+                    get?: (key: string) => {
+                      preventDefault?: () => void;
+                    };
+                  };
+                  yandexEvent.preventDefault?.();
+                  yandexEvent.get?.("domEvent")?.preventDefault?.();
+                  onOfficeContextMenu?.(office.id);
+                }}
               />
             );
           })}

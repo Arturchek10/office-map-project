@@ -23,6 +23,8 @@ interface OfficesBarProps {
   activeOfficeId?: number | null;
   onUserNavigation?: () => void;
   handleSetActiveOfficeId?: (id: number | null) => void;
+  onOpenOfficeFloors?: (officeId: number) => void;
+  onEditOfficeData?: (officeId: number) => void;
   resetActiveOffice?: () => void;
 }
 
@@ -31,6 +33,8 @@ export default function OfficesBar({
   open,
   activeOfficeId,
   handleSetActiveOfficeId,
+  onOpenOfficeFloors,
+  onEditOfficeData,
   resetActiveOffice,
 }: OfficesBarProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -97,16 +101,19 @@ export default function OfficesBar({
     }
   };
 
-  const handleEdit = async () => {
-    if (!selectedOfficeId) return;
+  const handleOpenFloors = async (officeId: number) => {
+    if (onOpenOfficeFloors) {
+      onOpenOfficeFloors(officeId);
+      return;
+    }
 
     try {
-      const office = await fetchOfficeByIdFx(selectedOfficeId);
+      const office = await fetchOfficeByIdFx(officeId);
 
       if (office.startFloor === null) {
-        navigate(`/office/${selectedOfficeId}/createfloor`);
+        navigate(`/office/${officeId}/createfloor`);
       } else {
-        navigate(`/office/${selectedOfficeId}/floor/${office.startFloor.id}`);
+        navigate(`/office/${officeId}/floor/${office.startFloor.id}`);
         getFloorByIdFx(office.startFloor.id);
       }
     } catch (error) {
@@ -116,9 +123,13 @@ export default function OfficesBar({
         message: "Ошибка при открытии офиса",
         severity: "error",
       });
-    } finally {
-      handleCloseMenu();
     }
+  };
+
+  const handleEdit = () => {
+    if (!selectedOfficeId) return;
+    onEditOfficeData?.(selectedOfficeId);
+    handleCloseMenu();
   };
 
   useEffect(() => {
@@ -216,7 +227,12 @@ export default function OfficesBar({
                   transition: "background-color 0.2s ease",
                 }}
                 onClick={
-                  canClick ? () => handleSetActiveOfficeId?.(office.id) : undefined
+                  canClick
+                    ? () => {
+                        handleSetActiveOfficeId?.(office.id);
+                        void handleOpenFloors(office.id);
+                      }
+                    : undefined
                 }
                 onContextMenu={
                   canManageOffice
