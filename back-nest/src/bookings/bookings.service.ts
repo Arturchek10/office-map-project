@@ -152,7 +152,7 @@ export class BookingsService {
     }
 
     const bookings = await query.getMany();
-    return bookings.map((booking) => this.toBookingDto(booking));
+    return bookings.flatMap((booking) => this.toBookingListItemDto(booking));
   }
 
   async getBooking(bookingId: number, user: AuthUser): Promise<BookingDto> {
@@ -246,7 +246,9 @@ export class BookingsService {
       .where('office.id = :officeId', { officeId })
       .orderBy('booking.start_time', 'DESC')
       .getMany()
-      .then((bookings) => bookings.map((booking) => this.toBookingDto(booking)));
+      .then((bookings) =>
+        bookings.flatMap((booking) => this.toBookingListItemDto(booking)),
+      );
   }
 
   async getActiveBookingsByFloorId(
@@ -443,5 +445,16 @@ export class BookingsService {
         },
       },
     };
+  }
+
+  private toBookingListItemDto(booking: BookingEntity): BookingDto[] {
+    try {
+      return [this.toBookingDto(booking)];
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        return [];
+      }
+      throw error;
+    }
   }
 }
