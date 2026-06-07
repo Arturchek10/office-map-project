@@ -100,7 +100,7 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
   const handleFindAddress = async () => {
     const query = buildAddressQuery(formData.city, formData.address);
     if (!query) {
-      setFormError("Заполните город и адрес, либо поставьте точку на карте.");
+      setFormError("Заполните город и адрес, либо поставьте метку офиса на карте.");
       return;
     }
 
@@ -111,7 +111,7 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
     setIsResolvingAddress(false);
 
     if (!coords) {
-      setFormError("Не удалось найти адрес. Поставьте точку на карте вручную.");
+      setFormError("Не удалось найти адрес. Поставьте метку офиса на карте вручную.");
       return;
     }
 
@@ -131,7 +131,7 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
     }
 
     if (!officePoint) {
-      setFormError("Поставьте точку офиса на карте.");
+      setFormError("Поставьте метку офиса на карте.");
       return;
     }
 
@@ -248,8 +248,8 @@ function NewOfficesBar({ onAddOffice, open, setOpen }: NewOfficesBarProps) {
                 <PlaceIcon fontSize="small" color={point ? "primary" : "disabled"} />
                 <Typography variant="body2" color="text.secondary">
                   {point
-                    ? `Точка: ${point[0].toFixed(6)}, ${point[1].toFixed(6)}`
-                    : "Кликните по карте, чтобы поставить точку офиса"}
+                    ? `Координаты: ${point[0].toFixed(6)}, ${point[1].toFixed(6)}`
+                    : "Кликните по карте, чтобы поставить метку офиса"}
                 </Typography>
               </Stack>
 

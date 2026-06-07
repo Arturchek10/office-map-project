@@ -3,7 +3,7 @@ export interface TOffice {
     name: string,
     latitude: number,
     longitude: number,
-    photoUrl: string,
+    photoUrl: string | null,
     city: string,
     address: string,
     createdByUserId?: number | string | null,

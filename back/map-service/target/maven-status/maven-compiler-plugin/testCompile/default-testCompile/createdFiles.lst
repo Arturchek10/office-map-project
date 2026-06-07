@@ -1,9 +1,0 @@
-com\t1\map_service\service\impl\FurnitureServiceImplTest.class
-com\t1\map_service\service\impl\FloorServiceImplTest.class
-com\t1\map_service\service\impl\OfficeServiceImplTest.class
-com\t1\map_service\MapServiceApplicationTests.class
-com\t1\map_service\service\impl\FloorViewServiceImplTest.class
-com\t1\map_service\service\photo\impl\BaseMinioPhotoServiceTest$DummyEntity.class
-com\t1\map_service\service\photo\impl\BaseMinioPhotoServiceTest$DummyPhotoService.class
-com\t1\map_service\storage\MinioFileStorageServiceTest.class
-com\t1\map_service\service\photo\impl\BaseMinioPhotoServiceTest.class

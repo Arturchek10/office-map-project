@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
@@ -7,28 +8,34 @@ import {
   DialogContent,
   DialogTitle,
   Stack,
+  TextField,
   Typography,
-} from "@mui/material"
-import AddIcon from "@mui/icons-material/Add"
-import LayersIcon from "@mui/icons-material/Layers"
-import OpenInNewIcon from "@mui/icons-material/OpenInNew"
-import { useNavigate } from "react-router-dom"
-import { $activeOffice } from "@shared/api/Offices/GetOfficeById"
-import { useUnit } from "effector-react"
-import { useEffect } from "react"
+} from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import LayersIcon from "@mui/icons-material/Layers";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import { useNavigate } from "react-router-dom";
+import { $activeOffice } from "@shared/api/Offices/GetOfficeById";
+import { useUnit } from "effector-react";
+import type { ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import {
   $activeOfficeLoading,
   fetchOfficeByIdFx,
-} from "@shared/api/Offices/GetOfficeById"
-import { TOffice } from "@entities/Office/type/office"
-import { getImageUrl } from "@shared/utils/getImageUrl"
-import { $user } from "@shared/store/auth"
+} from "@shared/api/Offices/GetOfficeById";
+import { fetchOfficesFx } from "@shared/api/Offices/GetOfficesList";
+import { updateOfficeFx } from "@shared/api/Offices/AddOffice";
+import { TOffice } from "@entities/Office/type/office";
+import { getImageUrl } from "@shared/utils/getImageUrl";
+import { $user } from "@shared/store/auth";
 
 interface OfficeInfoBarProps {
-  open: boolean
-  activeOfficeId: number | null
-  activeOffice: TOffice | null
-  onClose: () => void
+  open: boolean;
+  activeOfficeId: number | null;
+  activeOffice: TOffice | null;
+  onClose: () => void;
 }
 
 export default function OfficeInfoBar({
@@ -37,32 +44,98 @@ export default function OfficeInfoBar({
   activeOffice,
   onClose,
 }: OfficeInfoBarProps) {
-  const navigate = useNavigate()
-  const office = useUnit($activeOffice)
-  const loading = useUnit($activeOfficeLoading)
-  const user = useUnit($user)
-  const canEdit = user?.role === "ADMIN"
+  const navigate = useNavigate();
+  const office = useUnit($activeOffice);
+  const loading = useUnit($activeOfficeLoading);
+  const user = useUnit($user);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editPhoto, setEditPhoto] = useState<File | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
-    if (!open || !activeOfficeId) return
-    fetchOfficeByIdFx(activeOfficeId)
-  }, [open, activeOfficeId])
+    if (!open || !activeOfficeId) return;
+    fetchOfficeByIdFx(activeOfficeId);
+  }, [open, activeOfficeId]);
 
-  const currentOffice = office?.id === activeOfficeId ? office : null
-  const photoUrl = getImageUrl(activeOffice?.photoUrl)
-  const floors = currentOffice?.floors ?? []
+  useEffect(() => {
+    setEditOpen(false);
+    setEditName(activeOffice?.name ?? "");
+    setEditAddress(activeOffice?.address ?? "");
+    setEditPhoto(null);
+    setRemovePhoto(false);
+    setSaveError("");
+  }, [activeOffice?.id, activeOffice?.name, activeOffice?.address, open]);
+
+  const currentOffice = office?.id === activeOfficeId ? office : null;
+  const photoUrl = getImageUrl(activeOffice?.photoUrl);
+  const floors = currentOffice?.floors ?? [];
+  const canEdit =
+    user?.role === "ADMIN" &&
+    activeOffice?.createdByUserId != null &&
+    Number(activeOffice.createdByUserId) === Number(user.id);
 
   const handleCreateFloor = () => {
-    if (!activeOfficeId) return
-    onClose()
-    navigate(`/office/${activeOfficeId}/createfloor`)
-  }
+    if (!activeOfficeId) return;
+    onClose();
+    navigate(`/office/${activeOfficeId}/createfloor`);
+  };
 
   const handleOpenFloor = (floorId: number) => {
-    if (!activeOfficeId) return
-    onClose()
-    navigate(`/office/${activeOfficeId}/floor/${floorId}`)
-  }
+    if (!activeOfficeId) return;
+    onClose();
+    navigate(`/office/${activeOfficeId}/floor/${floorId}`);
+  };
+
+  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setEditPhoto(file);
+    if (file) {
+      setRemovePhoto(false);
+    }
+  };
+
+  const handleSaveOffice = async () => {
+    if (!activeOfficeId || !editName.trim() || !editAddress.trim()) {
+      setSaveError("Заполните название и адрес офиса.");
+      return;
+    }
+
+    setSaving(true);
+    setSaveError("");
+
+    try {
+      const formData = new FormData();
+      formData.append(
+        "data",
+        JSON.stringify({
+          name: editName.trim(),
+          address: editAddress.trim(),
+          removePhoto: editPhoto ? false : removePhoto,
+        }),
+      );
+
+      if (editPhoto) {
+        formData.append("photo", editPhoto);
+      }
+
+      await updateOfficeFx({ officeId: activeOfficeId, formData });
+      await Promise.all([fetchOfficesFx(), fetchOfficeByIdFx(activeOfficeId)]);
+      setEditOpen(false);
+      setEditPhoto(null);
+      setRemovePhoto(false);
+    } catch (error) {
+      setSaveError(
+        error instanceof Error ? error.message : "Не удалось сохранить офис.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -87,7 +160,7 @@ export default function OfficeInfoBar({
                 borderColor: "divider",
               }}
             >
-              {photoUrl ? (
+              {photoUrl && !removePhoto ? (
                 <img
                   src={photoUrl}
                   alt={activeOffice?.name ?? "office"}
@@ -120,6 +193,60 @@ export default function OfficeInfoBar({
                 Координаты: {activeOffice?.latitude}, {activeOffice?.longitude}
               </Typography>
             </Stack>
+
+            {canEdit && editOpen && (
+              <Box
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  p: 2,
+                }}
+              >
+                <Stack spacing={2}>
+                  <TextField
+                    label="Название офиса"
+                    value={editName}
+                    onChange={(event) => setEditName(event.target.value)}
+                    fullWidth
+                  />
+                  <TextField
+                    label="Адрес"
+                    value={editAddress}
+                    onChange={(event) => setEditAddress(event.target.value)}
+                    fullWidth
+                  />
+                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                    <Button
+                      component="label"
+                      variant="outlined"
+                      startIcon={<PhotoCameraIcon />}
+                    >
+                      {editPhoto ? editPhoto.name : "Заменить превью"}
+                      <input
+                        hidden
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg"
+                        onChange={handlePhotoChange}
+                      />
+                    </Button>
+                    {photoUrl && (
+                      <Button
+                        variant={removePhoto ? "contained" : "outlined"}
+                        color="error"
+                        onClick={() => {
+                          setRemovePhoto((value) => !value);
+                          setEditPhoto(null);
+                        }}
+                      >
+                        {removePhoto ? "Фото будет удалено" : "Удалить фото"}
+                      </Button>
+                    )}
+                  </Stack>
+                  {saveError && <Alert severity="error">{saveError}</Alert>}
+                </Stack>
+              </Box>
+            )}
 
             <Box>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
@@ -155,11 +282,33 @@ export default function OfficeInfoBar({
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={onClose}>Закрыть</Button>
         {canEdit && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreateFloor}>
-            {floors.length === 0 ? "Создать первый этаж" : "Добавить этаж"}
-          </Button>
+          <>
+            <Button
+              variant="outlined"
+              startIcon={<EditIcon />}
+              onClick={() => setEditOpen((value) => !value)}
+            >
+              {editOpen ? "Скрыть редактирование" : "Редактировать офис"}
+            </Button>
+            {editOpen && (
+              <Button
+                variant="contained"
+                onClick={() => void handleSaveOffice()}
+                disabled={saving}
+              >
+                Сохранить офис
+              </Button>
+            )}
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleCreateFloor}
+            >
+              {floors.length === 0 ? "Создать первый этаж" : "Добавить этаж"}
+            </Button>
+          </>
         )}
       </DialogActions>
     </Dialog>
-  )
+  );
 }

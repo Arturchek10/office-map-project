@@ -1,6 +1,6 @@
 import { createStore, createEffect } from "effector";
 import { TOffice } from "@entities/Office/type/office";
-import { addOfficeFx } from "./AddOffice";
+import { addOfficeFx, updateOfficeFx } from "./AddOffice";
 import { deleteOfficeFx } from "./DeleteOffice";
 import { apiGet } from "@shared/utils/api";
 
@@ -76,6 +76,9 @@ export const fetchOfficesFx = createEffect<void, TOffice[], Error>(async () => {
 export const $offices = createStore<TOffice[]>([])
   .on(fetchOfficesFx.doneData, (_, offices) => offices)
   .on(addOfficeFx.doneData, (state, newOffice) => [...state, newOffice])
+  .on(updateOfficeFx.doneData, (state, updatedOffice) =>
+    state.map((office) => (office.id === updatedOffice.id ? updatedOffice : office)),
+  )
   .on(deleteOfficeFx.doneData, (state, deletedOfficeId) =>
     state.filter((office) => office.id !== deletedOfficeId),
   );

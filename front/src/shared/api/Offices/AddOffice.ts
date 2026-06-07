@@ -1,6 +1,6 @@
 import { createEffect } from "effector"
 import { TOffice } from "@entities/Office/type/office"
-import { apiPostFormData } from "@shared/utils/api"
+import { apiPatchFormData, apiPostFormData } from "@shared/utils/api"
 
 export const addOfficeFx = createEffect<FormData, TOffice, Error>(
   async (formData) => {
@@ -37,3 +37,15 @@ export const addOfficeFx = createEffect<FormData, TOffice, Error>(
     }
   }
 )
+
+export const updateOfficeFx = createEffect<
+  { officeId: number; formData: FormData },
+  TOffice,
+  Error
+>(async ({ officeId, formData }) => {
+  const res = await apiPatchFormData(`/api/v1/offices/${officeId}`, formData, {
+    headers: { Accept: "application/json" },
+  })
+
+  return res.json()
+})

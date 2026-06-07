@@ -57,7 +57,7 @@ function HomePage() {
 
   const toggleOfficesBar = () => setIsOfficesBarOpen((prev) => !prev);
 
-  // Единая точка выбора офиса.
+  // Единый обработчик выбора офиса.
   // Используется и картой, и боковой панелью.
   // Повторный клик по активному офису снимает выделение.
   const handleSetActiveOfficeId = (id: number | null) => {

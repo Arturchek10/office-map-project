@@ -40,7 +40,6 @@ export default function OfficesBar({
   const user = useUnit($user);
 
   const isInsideOffice = location.pathname.startsWith("/office/");
-  const canEdit = user?.role === "ADMIN";
   const sectionTitle =
     user?.role === "USER"
       ? "Офисы для аренды"
@@ -198,7 +197,11 @@ export default function OfficesBar({
               office.floorsCount === 0 ||
               office.floorsCount === null ||
               office.floorsCount === undefined;
-            const canClick = !isNoFloors || canEdit;
+            const canManageOffice =
+              user?.role === "ADMIN" &&
+              office.createdByUserId != null &&
+              Number(office.createdByUserId) === Number(user.id);
+            const canClick = !isNoFloors || canManageOffice;
 
             return (
               <Box
@@ -216,7 +219,9 @@ export default function OfficesBar({
                   canClick ? () => handleSetActiveOfficeId?.(office.id) : undefined
                 }
                 onContextMenu={
-                  canEdit ? (event) => handleContextMenu(event, office.id) : undefined
+                  canManageOffice
+                    ? (event) => handleContextMenu(event, office.id)
+                    : undefined
                 }
               >
                 <Office {...office} active={isActive} isNoFloors={isNoFloors} />

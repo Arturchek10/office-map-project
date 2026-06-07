@@ -259,7 +259,7 @@ export default function BookingDetailsPage() {
                           InputLabelProps={{ shrink: true }}
                         />
                         <Button variant="contained" onClick={checkAvailable} disabled={checking}>
-                          Проверить свободные точки
+                          Проверить свободные маркеры
                         </Button>
                       </Stack>
 
@@ -298,7 +298,7 @@ export default function BookingDetailsPage() {
                                 return (
                                   <Box
                                     key={marker.id}
-                                    title={`Точка ${marker.id}`}
+                                    title={`Маркер ${marker.id}`}
                                     onClick={() => toggleMarker(marker)}
                                     sx={{
                                       position: "absolute",
@@ -338,7 +338,7 @@ export default function BookingDetailsPage() {
                           Массовая аренда
                         </Typography>
                         <Typography color="text.secondary" sx={{ mb: 1 }}>
-                          После проверки на схеме останутся только свободные точки для выбранного времени.
+                          После проверки на схеме останутся только свободные маркеры для выбранного времени.
                         </Typography>
                         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
                           <Chip label={`Свободно: ${availableMarkers?.length ?? "не проверено"}`} />
@@ -382,11 +382,11 @@ function MarkerGallery({ marker }: { marker: MarkerResponse | null }) {
   return (
     <Box sx={{ p: 2, borderRadius: 1, border: "1px solid #dde3ee" }}>
       <Typography fontWeight={700} sx={{ mb: 1 }}>
-        Галерея точки
+        Галерея маркера
       </Typography>
-      {!marker && <Typography color="text.secondary">Выберите точку на схеме.</Typography>}
+      {!marker && <Typography color="text.secondary">Выберите маркер на схеме.</Typography>}
       {marker && photos.length === 0 && (
-        <Typography color="text.secondary">Для этой точки ещё нет фотографий.</Typography>
+        <Typography color="text.secondary">Для этого маркера ещё нет фотографий.</Typography>
       )}
       {photos.length > 0 && (
         <ImageList cols={2} gap={8}>
@@ -394,7 +394,7 @@ function MarkerGallery({ marker }: { marker: MarkerResponse | null }) {
             <ImageListItem key={url}>
               <img
                 src={getImageUrl(url)}
-                alt={marker?.name ?? `Точка ${marker?.id}`}
+                alt={marker?.name ?? `Маркер ${marker?.id}`}
                 loading="lazy"
                 style={{ borderRadius: 6, objectFit: "cover" }}
               />

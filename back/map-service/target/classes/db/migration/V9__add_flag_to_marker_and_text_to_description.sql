@@ -1,5 +1,0 @@
-ALTER TABLE markers
-    ADD COLUMN IF NOT EXISTS is_uncomfortable BOOLEAN;
-
-ALTER TABLE description
-    ADD COLUMN IF NOT EXISTS text TEXT;

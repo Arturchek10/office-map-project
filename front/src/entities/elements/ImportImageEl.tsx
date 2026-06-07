@@ -1,18 +1,25 @@
 import { Button } from "@mui/material";
+import type { ChangeEvent } from "react";
 
 type ImportImageElProps = {
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  disabled?: boolean;
 };
 
-export default function ImportImageEl({ onChange }: ImportImageElProps) {
+export default function ImportImageEl({
+  onChange,
+  disabled = false,
+}: ImportImageElProps) {
   return (
-    <>
-      <label className="cursor-pointer">
-        <Button variant="contained" component="span">
-          Загрузить изображение
-        </Button>
-        <input type="file" onChange={onChange} className="hidden"></input>
-      </label>
-    </>
+    <Button variant="contained" component="label" disabled={disabled}>
+      {disabled ? "Сначала создайте этаж" : "Загрузить изображение"}
+      <input
+        hidden
+        disabled={disabled}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg"
+        onChange={onChange}
+      />
+    </Button>
   );
 }

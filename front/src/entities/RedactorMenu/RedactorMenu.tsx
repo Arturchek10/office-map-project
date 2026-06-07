@@ -112,7 +112,7 @@ export default function RedactorMenu({
   const saveAttributes = async () => {
     if (!selectedMarker) return;
     if (!name.trim()) {
-      setError("Название точки обязательно");
+      setError("Название маркера обязательно");
       return;
     }
 
@@ -141,7 +141,7 @@ export default function RedactorMenu({
       onUpdate(updatedMarker);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Не удалось сохранить точку");
+      setError(err instanceof Error ? err.message : "Не удалось сохранить маркер");
     }
   };
 
@@ -178,12 +178,12 @@ export default function RedactorMenu({
 
   return (
     <Dialog open={isOpen} onClose={onClose} fullWidth maxWidth="sm" slotProps={{paper: {style: {marginTop: 50}}}}>
-      <DialogTitle>Редактирование точки</DialogTitle>
+      <DialogTitle>Редактирование маркера</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2}>
           <TextField
             select
-            label="Тип точки"
+            label="Тип маркера"
             value={selectedType}
             onChange={(event) => setSelectedType(event.target.value as MarkerTypeRu)}
           >
@@ -199,7 +199,7 @@ export default function RedactorMenu({
             value={name}
             onChange={(event) => setName(event.target.value)}
             error={Boolean(error)}
-            helperText={error || "Название будет видно пользователю при выборе точки"}
+            helperText={error || "Название будет видно пользователю при выборе маркера"}
           />
 
           {(selectedType === "Рабочее место" || selectedType === "Переговорная") && (
@@ -251,7 +251,7 @@ export default function RedactorMenu({
 
           <Box>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-              <Typography fontWeight={700}>Галерея точки</Typography>
+              <Typography fontWeight={700}>Галерея маркера</Typography>
               <Button
                 component="label"
                 variant="outlined"
@@ -274,7 +274,7 @@ export default function RedactorMenu({
                   <ImageListItem key={photo.id}>
                     <img
                       src={getImageUrl(photo.url)}
-                      alt={selectedMarker.name ?? "Фото точки"}
+                      alt={selectedMarker.name ?? "Фото маркера"}
                       loading="lazy"
                       style={{ borderRadius: 6, height: 120, objectFit: "cover" }}
                     />

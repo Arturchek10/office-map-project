@@ -74,7 +74,7 @@ export default function AdminPanelPage() {
   return (
     <>
       <Header officeName="Панель управления" />
-      <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f5f7fb" }}>
+      <Box sx={{ display: "flex", height: "100vh", bgcolor: "#f5f7fb" }}>
         <NavBar onToggleOffices={() => undefined} />
         <Box
           component="main"
@@ -84,6 +84,8 @@ export default function AdminPanelPage() {
             px: 4,
             pb: 4,
             width: "100%",
+            height: "100vh",
+            overflowY: "auto",
           }}
         >
           {user?.role === "USER" && <AdminRequestSection user={user} />}

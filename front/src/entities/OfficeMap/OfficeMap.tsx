@@ -698,7 +698,12 @@ export default function OfficeMap() {
           </div>
         </Fade>
         {canEdit && <AddFloorButton />}
-        {canEdit && <ImportImageEl onChange={handleFileChange} />}
+        {canEdit && (
+          <ImportImageEl
+            onChange={handleFileChange}
+            disabled={!currentFloor?.id}
+          />
+        )}
         {canEdit && (
           <Button
             variant={schemaUnlocked ? "contained" : "outlined"}
