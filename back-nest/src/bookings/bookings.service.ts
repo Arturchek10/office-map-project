@@ -486,18 +486,22 @@ export class BookingsService {
       throw new NotFoundException('Booking place is not available');
     }
 
+    const pricePerHour = Number(booking.pricePerHour ?? marker.pricePerHour ?? 0)
+    const calculatedPrice = this.calculatePrice(
+      marker,
+      booking.startTime,
+      booking.endTime,
+    ).totalPrice
+
     return {
       id: booking.id,
       markerId: booking.markerId,
       userId: booking.userId,
       startTime: booking.startTime,
       endTime: booking.endTime,
-      pricePerHour: Number(booking.pricePerHour ?? marker.pricePerHour ?? 0),
-      totalPrice: Number(
-        booking.totalPrice ??
-          this.calculatePrice(marker, booking.startTime, booking.endTime)
-            .totalPrice,
-      ),
+      pricePerHour,
+      totalPrice:
+        Number(booking.totalPrice ?? calculatedPrice) || calculatedPrice,
       status: booking.status,
       place: {
         officeId: office.id,

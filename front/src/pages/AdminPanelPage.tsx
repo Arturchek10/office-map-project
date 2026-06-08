@@ -55,6 +55,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 type SuperTab = "requests" | "users" | "banned" | "create";
+type ReportTab = "places" | "floors" | "office";
 
 const formatDateTime = (value: string) =>
   new Date(value).toLocaleString("ru-RU", {
@@ -67,6 +68,78 @@ const formatDateTime = (value: string) =>
 
 const messageFromError = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("ru-RU", {
+    style: "currency",
+    currency: "RUB",
+    maximumFractionDigits: 2,
+  }).format(value);
+
+const buildOfficeReport = (bookings: Booking[]) => {
+  const placeMap = new Map<
+    string,
+    { label: string; floor: string; count: number; revenue: number }
+  >();
+  const floorMap = new Map<
+    string,
+    { floor: string; count: number; revenue: number; markers: Set<string> }
+  >();
+
+  let totalRevenue = 0;
+  let totalHours = 0;
+
+  bookings.forEach((booking) => {
+    const start = new Date(booking.startTime).getTime();
+    const end = new Date(booking.endTime).getTime();
+    const durationHours = (end - start) / (1000 * 60 * 60);
+    totalHours += Number.isFinite(durationHours) ? durationHours : 0;
+
+    const totalPrice = Number(booking.totalPrice ?? 0);
+    const pricePerHour = Number(
+      booking.pricePerHour ?? booking.place.marker.pricePerHour ?? 0,
+    );
+    const fallbackPrice = pricePerHour * Math.max(0, durationHours);
+    const revenue = totalPrice || fallbackPrice;
+    totalRevenue += revenue;
+
+    const placeLabel = booking.place.marker.name || `Место #${booking.markerId}`;
+    const floorLabel = `${booking.place.floorName} (этаж ${booking.place.floorOrderNumber})`;
+
+    const key = `${booking.place.floorId}:${booking.markerId}`;
+    const placeEntry = placeMap.get(key) ?? {
+      label: placeLabel,
+      floor: floorLabel,
+      count: 0,
+      revenue: 0,
+    };
+    placeEntry.count += 1;
+    placeEntry.revenue += revenue;
+    placeMap.set(key, placeEntry);
+
+    const floorKey = String(booking.place.floorId);
+    const floorEntry = floorMap.get(floorKey) ?? {
+      floor: floorLabel,
+      count: 0,
+      revenue: 0,
+      markers: new Set<string>(),
+    };
+    floorEntry.count += 1;
+    floorEntry.revenue += revenue;
+    floorEntry.markers.add(placeLabel);
+    floorMap.set(floorKey, floorEntry);
+  });
+
+  return {
+    totalBookings: bookings.length,
+    totalRevenue,
+    totalHours,
+    uniquePlaces: placeMap.size,
+    uniqueFloors: floorMap.size,
+    placeRows: Array.from(placeMap.values()).sort((a, b) => b.count - a.count),
+    floorRows: Array.from(floorMap.values()).sort((a, b) => b.count - a.count),
+  };
+};
 
 export default function AdminPanelPage() {
   const user = useUnit($user);
@@ -196,6 +269,8 @@ function AdminOfficesSection() {
   const [error, setError] = useState("");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingsTitle, setBookingsTitle] = useState("");
+  const [reports, setReports] = useState<Booking[]>([]);
+  const [reportsTitle, setReportsTitle] = useState("");
 
   const loadOffices = async (nextCursor: number | null = null) => {
     setLoading(true);
@@ -221,6 +296,11 @@ function AdminOfficesSection() {
     setBookings(await getOfficeBookingsByAdmin(office.id));
   };
 
+  const openOfficeReports = async (office: AdminOffice) => {
+    setReportsTitle(office.name ?? `Офис #${office.id}`);
+    setReports(await getOfficeBookingsByAdmin(office.id));
+  };
+
   return (
     <Stack spacing={2}>
       <Typography variant="h5" fontWeight={700}>
@@ -238,9 +318,14 @@ function AdminOfficesSection() {
                   Этажей: {office.floorsCount}
                 </Typography>
               </Box>
-              <Button variant="outlined" onClick={() => void openOfficeBookings(office)}>
-                Аренды офиса
-              </Button>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Button variant="outlined" onClick={() => void openOfficeBookings(office)}>
+                  Аренды офиса
+                </Button>
+                <Button variant="contained" onClick={() => void openOfficeReports(office)}>
+                  Отчёты
+                </Button>
+              </Stack>
             </Stack>
           </Paper>
         ))}
@@ -257,6 +342,14 @@ function AdminOfficesSection() {
         onClose={() => {
           setBookings([]);
           setBookingsTitle("");
+        }}
+      />
+      <ReportsDialog
+        title={reportsTitle}
+        bookings={reports}
+        onClose={() => {
+          setReports([]);
+          setReportsTitle("");
         }}
       />
     </Stack>
@@ -705,6 +798,114 @@ function BookingsDialog({
             <Typography color="text.secondary">
               Аренд пока нет.
             </Typography>
+          )}
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Закрыть</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function ReportsDialog({
+  title,
+  bookings,
+  onClose,
+}: {
+  title: string;
+  bookings: Booking[];
+  onClose: () => void;
+}) {
+  const [tab, setTab] = useState<ReportTab>("places");
+  const report = buildOfficeReport(bookings);
+
+  return (
+    <Dialog open={Boolean(title)} onClose={onClose} fullWidth maxWidth="lg">
+      <DialogTitle>Отчёты: {title}</DialogTitle>
+      <DialogContent dividers>
+        <Stack spacing={2}>
+          <Paper sx={{ p: 2, borderRadius: 1, bgcolor: "grey.50" }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Отчёт по офису
+            </Typography>
+            <Typography color="text.secondary" variant="body2">
+              Вкладки показывают три варианта отчёта: по местам на этажах, по этажам и общий итог по офису.
+            </Typography>
+          </Paper>
+
+          <Paper sx={{ borderRadius: 1 }}>
+            <Tabs value={tab} onChange={(_, value: ReportTab) => setTab(value)}>
+              <Tab value="places" label="Места" />
+              <Tab value="floors" label="По этажам" />
+              <Tab value="office" label="Общий по офису" />
+            </Tabs>
+          </Paper>
+
+          {tab === "places" && (
+            <Stack spacing={1}>
+              {report.placeRows.length === 0 && (
+                <Typography color="text.secondary">Нет данных по арендам.</Typography>
+              )}
+              {report.placeRows.map((item) => (
+                <Paper key={`${item.floor}-${item.label}`} sx={{ p: 2, borderRadius: 1 }}>
+                  <Stack direction="row" justifyContent="space-between" gap={2} flexWrap="wrap">
+                    <Box>
+                      <Typography fontWeight={700}>{item.label}</Typography>
+                      <Typography color="text.secondary">{item.floor}</Typography>
+                    </Box>
+                    <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                      <Chip label={`Бронирований: ${item.count}`} color="primary" />
+                      <Chip label={`Выручка: ${formatCurrency(item.revenue)}`} color="success" />
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
+          )}
+
+          {tab === "floors" && (
+            <Stack spacing={1}>
+              {report.floorRows.length === 0 && (
+                <Typography color="text.secondary">Нет данных по этажам.</Typography>
+              )}
+              {report.floorRows.map((item) => (
+                <Paper key={item.floor} sx={{ p: 2, borderRadius: 1 }}>
+                  <Stack direction="row" justifyContent="space-between" gap={2} flexWrap="wrap">
+                    <Box>
+                      <Typography fontWeight={700}>{item.floor}</Typography>
+                      <Typography color="text.secondary">
+                        Уникальных мест: {item.markers.size}
+                      </Typography>
+                    </Box>
+                    <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                      <Chip label={`Бронирований: ${item.count}`} color="primary" />
+                      <Chip label={`Выручка: ${formatCurrency(item.revenue)}`} color="success" />
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ))}
+            </Stack>
+          )}
+
+          {tab === "office" && (
+            <Stack spacing={1.5}>
+              <Paper sx={{ p: 2, borderRadius: 1 }}>
+                <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+                  Общий итог по офису
+                </Typography>
+                <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+                  <Chip label={`Бронирований: ${report.totalBookings}`} color="primary" />
+                  <Chip label={`Уникальных мест: ${report.uniquePlaces}`} color="info" />
+                  <Chip label={`Этажей: ${report.uniqueFloors}`} color="secondary" />
+                  <Chip label={`Выручка: ${formatCurrency(report.totalRevenue)}`} color="success" />
+                  <Chip label={`Часов аренды: ${report.totalHours.toFixed(1)}`} color="warning" />
+                </Stack>
+              </Paper>
+              <Typography color="text.secondary" variant="body2">
+                Это краткий общий отчёт по арендам для текущего офиса. Данные формируются из уже существующих броней и доступны только в админском кабинете.
+              </Typography>
+            </Stack>
           )}
         </Stack>
       </DialogContent>
