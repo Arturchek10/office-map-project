@@ -202,7 +202,7 @@ export class BookingsService {
     return {
       items: visibleItems,
       nextCursor:
-        dtos.length > safeSize ? visibleItems.at(-1)?.id ?? null : null,
+        dtos.length > safeSize ? (visibleItems.at(-1)?.id ?? null) : null,
       hasMore: dtos.length > safeSize,
     };
   }
@@ -486,12 +486,14 @@ export class BookingsService {
       throw new NotFoundException('Booking place is not available');
     }
 
-    const pricePerHour = Number(booking.pricePerHour ?? marker.pricePerHour ?? 0)
+    const pricePerHour = Number(
+      booking.pricePerHour ?? marker.pricePerHour ?? 0,
+    );
     const calculatedPrice = this.calculatePrice(
       marker,
       booking.startTime,
       booking.endTime,
-    ).totalPrice
+    ).totalPrice;
 
     return {
       id: booking.id,

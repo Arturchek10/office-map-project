@@ -1,3 +1,9 @@
+import { TOffice } from '@entities/Office/type/office';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import LayersIcon from '@mui/icons-material/Layers';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import {
   Alert,
   Box,
@@ -14,28 +20,22 @@ import {
   Tabs,
   TextField,
   Typography,
-} from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import EditIcon from "@mui/icons-material/Edit";
-import LayersIcon from "@mui/icons-material/Layers";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import { useNavigate } from "react-router-dom";
-import { $activeOffice } from "@shared/api/Offices/GetOfficeById";
-import { useUnit } from "effector-react";
-import type { ChangeEvent } from "react";
-import { useEffect, useState } from "react";
+} from '@mui/material';
+import { getOfficeBookingsByAdmin } from '@shared/api/Admin';
+import type { Booking } from '@shared/api/Bookings';
+import { updateOfficeFx } from '@shared/api/Offices/AddOffice';
 import {
+  $activeOffice,
   $activeOfficeLoading,
   fetchOfficeByIdFx,
-} from "@shared/api/Offices/GetOfficeById";
-import { fetchOfficesFx } from "@shared/api/Offices/GetOfficesList";
-import { updateOfficeFx } from "@shared/api/Offices/AddOffice";
-import { TOffice } from "@entities/Office/type/office";
-import { getImageUrl } from "@shared/utils/getImageUrl";
-import { $user } from "@shared/store/auth";
-import { getOfficeBookingsByAdmin } from "@shared/api/Admin";
-import type { Booking } from "@shared/api/Bookings";
+} from '@shared/api/Offices/GetOfficeById';
+import { fetchOfficesFx } from '@shared/api/Offices/GetOfficesList';
+import { $user } from '@shared/store/auth';
+import { getImageUrl } from '@shared/utils/getImageUrl';
+import { useUnit } from 'effector-react';
+import type { ChangeEvent } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface OfficeInfoBarProps {
   open: boolean;
@@ -58,22 +58,22 @@ export default function OfficeInfoBar({
   const user = useUnit($user);
 
   const [editOpen, setEditOpen] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editAddress, setEditAddress] = useState("");
+  const [editName, setEditName] = useState('');
+  const [editAddress, setEditAddress] = useState('');
   const [editPhoto, setEditPhoto] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
-  const [reportTab, setReportTab] = useState<"info" | "reports">("info");
+  const [saveError, setSaveError] = useState('');
+  const [reportTab, setReportTab] = useState<'info' | 'reports'>('info');
   const [reports, setReports] = useState<Booking[]>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
-  const [reportsError, setReportsError] = useState("");
+  const [reportsError, setReportsError] = useState('');
 
   const currentOffice = office?.id === activeOfficeId ? office : null;
   const photoUrl = getImageUrl(activeOffice?.photoUrl);
   const floors = currentOffice?.floors ?? [];
   const canEdit =
-    user?.role === "ADMIN" &&
+    user?.role === 'ADMIN' &&
     activeOffice?.createdByUserId != null &&
     Number(activeOffice.createdByUserId) === Number(user.id);
 
@@ -85,14 +85,14 @@ export default function OfficeInfoBar({
   useEffect(() => {
     if (!open || !activeOfficeId || !canEdit) {
       setReports([]);
-      setReportsError("");
+      setReportsError('');
       return;
     }
 
     let isCancelled = false;
     const loadReports = async () => {
       setReportsLoading(true);
-      setReportsError("");
+      setReportsError('');
       try {
         const data = await getOfficeBookingsByAdmin(activeOfficeId);
         if (!isCancelled) {
@@ -100,7 +100,11 @@ export default function OfficeInfoBar({
         }
       } catch (error) {
         if (!isCancelled) {
-          setReportsError(error instanceof Error ? error.message : "Не удалось загрузить отчёты");
+          setReportsError(
+            error instanceof Error
+              ? error.message
+              : 'Не удалось загрузить отчёты',
+          );
         }
       } finally {
         if (!isCancelled) {
@@ -117,11 +121,11 @@ export default function OfficeInfoBar({
 
   useEffect(() => {
     setEditOpen(openEditByDefault);
-    setEditName(activeOffice?.name ?? "");
-    setEditAddress(activeOffice?.address ?? "");
+    setEditName(activeOffice?.name ?? '');
+    setEditAddress(activeOffice?.address ?? '');
     setEditPhoto(null);
     setRemovePhoto(false);
-    setSaveError("");
+    setSaveError('');
   }, [
     activeOffice?.id,
     activeOffice?.name,
@@ -131,15 +135,21 @@ export default function OfficeInfoBar({
   ]);
 
   const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("ru-RU", {
-      style: "currency",
-      currency: "RUB",
+    new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
       maximumFractionDigits: 2,
     }).format(value);
 
   const buildReport = (bookings: Booking[]) => {
-    const placeMap = new Map<string, { label: string; floor: string; count: number; revenue: number }>();
-    const floorMap = new Map<string, { floor: string; count: number; revenue: number; markers: Set<string> }>();
+    const placeMap = new Map<
+      string,
+      { label: string; floor: string; count: number; revenue: number }
+    >();
+    const floorMap = new Map<
+      string,
+      { floor: string; count: number; revenue: number; markers: Set<string> }
+    >();
     let totalRevenue = 0;
 
     bookings.forEach((booking) => {
@@ -154,16 +164,27 @@ export default function OfficeInfoBar({
       const revenue = totalPrice || fallbackPrice;
       totalRevenue += revenue;
 
-      const placeLabel = booking.place.marker.name || `Место #${booking.markerId}`;
+      const placeLabel =
+        booking.place.marker.name || `Место #${booking.markerId}`;
       const floorLabel = `${booking.place.floorName} (этаж ${booking.place.floorOrderNumber})`;
       const placeKey = `${booking.place.floorId}:${booking.markerId}`;
-      const placeEntry = placeMap.get(placeKey) ?? { label: placeLabel, floor: floorLabel, count: 0, revenue: 0 };
+      const placeEntry = placeMap.get(placeKey) ?? {
+        label: placeLabel,
+        floor: floorLabel,
+        count: 0,
+        revenue: 0,
+      };
       placeEntry.count += 1;
       placeEntry.revenue += revenue;
       placeMap.set(placeKey, placeEntry);
 
       const floorKey = String(booking.place.floorId);
-      const floorEntry = floorMap.get(floorKey) ?? { floor: floorLabel, count: 0, revenue: 0, markers: new Set<string>() };
+      const floorEntry = floorMap.get(floorKey) ?? {
+        floor: floorLabel,
+        count: 0,
+        revenue: 0,
+        markers: new Set<string>(),
+      };
       floorEntry.count += 1;
       floorEntry.revenue += revenue;
       floorEntry.markers.add(placeLabel);
@@ -175,8 +196,12 @@ export default function OfficeInfoBar({
       totalRevenue,
       uniquePlaces: placeMap.size,
       uniqueFloors: floorMap.size,
-      placeRows: Array.from(placeMap.values()).sort((a, b) => b.count - a.count),
-      floorRows: Array.from(floorMap.values()).sort((a, b) => b.count - a.count),
+      placeRows: Array.from(placeMap.values()).sort(
+        (a, b) => b.count - a.count,
+      ),
+      floorRows: Array.from(floorMap.values()).sort(
+        (a, b) => b.count - a.count,
+      ),
     };
   };
 
@@ -204,17 +229,17 @@ export default function OfficeInfoBar({
 
   const handleSaveOffice = async () => {
     if (!activeOfficeId || !editName.trim() || !editAddress.trim()) {
-      setSaveError("Заполните название и адрес офиса.");
+      setSaveError('Заполните название и адрес офиса.');
       return;
     }
 
     setSaving(true);
-    setSaveError("");
+    setSaveError('');
 
     try {
       const formData = new FormData();
       formData.append(
-        "data",
+        'data',
         JSON.stringify({
           name: editName.trim(),
           address: editAddress.trim(),
@@ -223,7 +248,7 @@ export default function OfficeInfoBar({
       );
 
       if (editPhoto) {
-        formData.append("photo", editPhoto);
+        formData.append('photo', editPhoto);
       }
 
       await updateOfficeFx({ officeId: activeOfficeId, formData });
@@ -233,7 +258,7 @@ export default function OfficeInfoBar({
       setRemovePhoto(false);
     } catch (error) {
       setSaveError(
-        error instanceof Error ? error.message : "Не удалось сохранить офис.",
+        error instanceof Error ? error.message : 'Не удалось сохранить офис.',
       );
     } finally {
       setSaving(false);
@@ -242,11 +267,14 @@ export default function OfficeInfoBar({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{activeOffice?.name ?? "Офис"}</DialogTitle>
+      <DialogTitle>{activeOffice?.name ?? 'Офис'}</DialogTitle>
       <DialogContent dividers>
         {canEdit && (
           <Box sx={{ mb: 2 }}>
-            <Tabs value={reportTab} onChange={(_, value: "info" | "reports") => setReportTab(value)}>
+            <Tabs
+              value={reportTab}
+              onChange={(_, value: 'info' | 'reports') => setReportTab(value)}
+            >
               <Tab value="info" label="Информация" />
               <Tab value="reports" label="Отчёты" />
             </Tabs>
@@ -254,42 +282,86 @@ export default function OfficeInfoBar({
         )}
 
         {loading && (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
             <CircularProgress />
           </Box>
         )}
 
         {!loading && (
           <Stack spacing={2.5}>
-            {canEdit && reportTab === "reports" ? (
+            {canEdit && reportTab === 'reports' ? (
               <Stack spacing={2}>
                 {reportsLoading && <CircularProgress />}
                 {reportsError && <Alert severity="error">{reportsError}</Alert>}
                 {!reportsLoading && !reportsError && (
                   <>
-                    <Paper sx={{ p: 2, borderRadius: 1, bgcolor: "grey.50" }}>
-                      <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+                    <Paper sx={{ p: 2, borderRadius: 1, bgcolor: 'grey.50' }}>
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight={700}
+                        gutterBottom
+                      >
                         Отчёты по офису
                       </Typography>
-                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                        <Chip label={`Бронирований: ${report.totalBookings}`} color="primary" />
-                        <Chip label={`Мест: ${report.uniquePlaces}`} color="info" />
-                        <Chip label={`Этажей: ${report.uniqueFloors}`} color="secondary" />
-                        <Chip label={`Выручка: ${formatCurrency(report.totalRevenue)}`} color="success" />
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        flexWrap="wrap"
+                        useFlexGap
+                      >
+                        <Chip
+                          label={`Бронирований: ${report.totalBookings}`}
+                          color="primary"
+                        />
+                        <Chip
+                          label={`Мест: ${report.uniquePlaces}`}
+                          color="info"
+                        />
+                        <Chip
+                          label={`Этажей: ${report.uniqueFloors}`}
+                          color="secondary"
+                        />
+                        <Chip
+                          label={`Выручка: ${formatCurrency(report.totalRevenue)}`}
+                          color="success"
+                        />
                       </Stack>
                     </Paper>
 
                     <Stack spacing={1}>
                       {report.placeRows.map((item) => (
-                        <Paper key={`${item.floor}-${item.label}`} sx={{ p: 2, borderRadius: 1 }}>
-                          <Stack direction="row" justifyContent="space-between" gap={2} flexWrap="wrap">
+                        <Paper
+                          key={`${item.floor}-${item.label}`}
+                          sx={{ p: 2, borderRadius: 1 }}
+                        >
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            gap={2}
+                            flexWrap="wrap"
+                          >
                             <Box>
-                              <Typography fontWeight={700}>{item.label}</Typography>
-                              <Typography color="text.secondary">{item.floor}</Typography>
+                              <Typography fontWeight={700}>
+                                {item.label}
+                              </Typography>
+                              <Typography color="text.secondary">
+                                {item.floor}
+                              </Typography>
                             </Box>
-                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                              <Chip label={`Бронирований: ${item.count}`} color="primary" />
-                              <Chip label={`Выручка: ${formatCurrency(item.revenue)}`} color="success" />
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              flexWrap="wrap"
+                              useFlexGap
+                            >
+                              <Chip
+                                label={`Бронирований: ${item.count}`}
+                                color="primary"
+                              />
+                              <Chip
+                                label={`Выручка: ${formatCurrency(item.revenue)}`}
+                                color="success"
+                              />
                             </Stack>
                           </Stack>
                         </Paper>
@@ -302,33 +374,33 @@ export default function OfficeInfoBar({
               <>
                 <Box
                   sx={{
-                    width: "100%",
+                    width: '100%',
                     height: 260,
-                    overflow: "hidden",
+                    overflow: 'hidden',
                     borderRadius: 1,
-                    bgcolor: "#f5f7fa",
-                    border: "1px solid",
-                    borderColor: "divider",
+                    bgcolor: '#f5f7fa',
+                    border: '1px solid',
+                    borderColor: 'divider',
                   }}
                 >
                   {photoUrl && !removePhoto ? (
                     <img
                       src={photoUrl}
-                      alt={activeOffice?.name ?? "office"}
+                      alt={activeOffice?.name ?? 'office'}
                       style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
                       }}
                     />
                   ) : (
                     <Box
                       sx={{
-                        height: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "text.secondary",
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'text.secondary',
                       }}
                     >
                       Фото офиса не загружено
@@ -341,15 +413,16 @@ export default function OfficeInfoBar({
                     {activeOffice?.city}, {activeOffice?.address}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Координаты: {activeOffice?.latitude}, {activeOffice?.longitude}
+                    Координаты: {activeOffice?.latitude},{' '}
+                    {activeOffice?.longitude}
                   </Typography>
                 </Stack>
 
                 {canEdit && editOpen && (
                   <Box
                     sx={{
-                      border: "1px solid",
-                      borderColor: "divider",
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 1,
                       p: 2,
                     }}
@@ -367,13 +440,18 @@ export default function OfficeInfoBar({
                         onChange={(event) => setEditAddress(event.target.value)}
                         fullWidth
                       />
-                      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        useFlexGap
+                        flexWrap="wrap"
+                      >
                         <Button
                           component="label"
                           variant="outlined"
                           startIcon={<PhotoCameraIcon />}
                         >
-                          {editPhoto ? editPhoto.name : "Заменить превью"}
+                          {editPhoto ? editPhoto.name : 'Заменить превью'}
                           <input
                             hidden
                             type="file"
@@ -383,14 +461,16 @@ export default function OfficeInfoBar({
                         </Button>
                         {photoUrl && (
                           <Button
-                            variant={removePhoto ? "contained" : "outlined"}
+                            variant={removePhoto ? 'contained' : 'outlined'}
                             color="error"
                             onClick={() => {
                               setRemovePhoto((value) => !value);
                               setEditPhoto(null);
                             }}
                           >
-                            {removePhoto ? "Фото будет удалено" : "Удалить фото"}
+                            {removePhoto
+                              ? 'Фото будет удалено'
+                              : 'Удалить фото'}
                           </Button>
                         )}
                       </Stack>
@@ -400,16 +480,23 @@ export default function OfficeInfoBar({
                 )}
 
                 <Box>
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    sx={{ mb: 1 }}
+                  >
                     <LayersIcon fontSize="small" color="primary" />
-                    <Typography variant="subtitle2">Этажи: {floors.length}</Typography>
+                    <Typography variant="subtitle2">
+                      Этажи: {floors.length}
+                    </Typography>
                   </Stack>
 
                   {floors.length === 0 ? (
                     <Typography variant="body2" color="text.secondary">
                       {canEdit
-                        ? "У офиса пока нет этажей. Создайте первый этаж, затем загрузите план и расставьте маркеры."
-                        : "У офиса пока нет доступных этажей."}
+                        ? 'У офиса пока нет этажей. Создайте первый этаж, затем загрузите план и расставьте маркеры.'
+                        : 'У офиса пока нет доступных этажей.'}
                     </Typography>
                   ) : (
                     <Stack spacing={1}>
@@ -419,7 +506,7 @@ export default function OfficeInfoBar({
                           variant="outlined"
                           startIcon={<OpenInNewIcon />}
                           onClick={() => handleOpenFloor(floor.id)}
-                          sx={{ justifyContent: "flex-start" }}
+                          sx={{ justifyContent: 'flex-start' }}
                         >
                           {floor.name} · этаж {floor.orderNumber}
                         </Button>
@@ -441,7 +528,7 @@ export default function OfficeInfoBar({
               startIcon={<EditIcon />}
               onClick={() => setEditOpen((value) => !value)}
             >
-              {editOpen ? "Скрыть редактирование" : "Редактировать офис"}
+              {editOpen ? 'Скрыть редактирование' : 'Редактировать офис'}
             </Button>
             {editOpen && (
               <Button
@@ -457,7 +544,7 @@ export default function OfficeInfoBar({
               startIcon={<AddIcon />}
               onClick={handleCreateFloor}
             >
-              {floors.length === 0 ? "Создать первый этаж" : "Добавить этаж"}
+              {floors.length === 0 ? 'Создать первый этаж' : 'Добавить этаж'}
             </Button>
           </>
         )}

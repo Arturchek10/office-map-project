@@ -1,10 +1,10 @@
-import Header from "@entities/Header/Header";
-import NavBar from "@entities/NavBar/NavBar";
-import { drawerWidth } from "@features/OfficesBar/config/config";
-import BlockIcon from "@mui/icons-material/Block";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import RestoreIcon from "@mui/icons-material/Restore";
+import Header from '@entities/Header/Header';
+import NavBar from '@entities/NavBar/NavBar';
+import { drawerWidth } from '@features/OfficesBar/config/config';
+import BlockIcon from '@mui/icons-material/Block';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import RestoreIcon from '@mui/icons-material/Restore';
 import {
   Alert,
   Box,
@@ -23,7 +23,7 @@ import {
   Tabs,
   TextField,
   Typography,
-} from "@mui/material";
+} from '@mui/material';
 import {
   approveAdminRequest,
   blockAdminWithOffices,
@@ -33,46 +33,46 @@ import {
   getAdminOffices,
   getAdminRequests,
   getBannedUsers,
-  getMyAdminRequests,
   getMyAdminOffices,
+  getMyAdminRequests,
   getOfficeBookingsByAdmin,
   getUserBookingsByAdmin,
   getUsers,
   rejectAdminRequest,
   unblockAdminWithOffices,
   unblockUser,
-} from "@shared/api/Admin";
-import type { Booking } from "@shared/api/Bookings";
-import { $user } from "@shared/store/auth";
+} from '@shared/api/Admin';
+import type { Booking } from '@shared/api/Bookings';
+import { $user } from '@shared/store/auth';
 import type {
   AdminOffice,
   AdminRequest,
   UserListItem,
-} from "@shared/types/admin";
-import type { UserInfo } from "@shared/types/user.types";
-import { useUnit } from "effector-react";
-import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+} from '@shared/types/admin';
+import type { UserInfo } from '@shared/types/user.types';
+import { useUnit } from 'effector-react';
+import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 
-type SuperTab = "requests" | "users" | "banned" | "create";
-type ReportTab = "places" | "floors" | "office";
+type SuperTab = 'requests' | 'users' | 'banned' | 'create';
+type ReportTab = 'places' | 'floors' | 'office';
 
 const formatDateTime = (value: string) =>
-  new Date(value).toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  new Date(value).toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 
 const messageFromError = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
 const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("ru-RU", {
-    style: "currency",
-    currency: "RUB",
+  new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency: 'RUB',
     maximumFractionDigits: 2,
   }).format(value);
 
@@ -103,7 +103,8 @@ const buildOfficeReport = (bookings: Booking[]) => {
     const revenue = totalPrice || fallbackPrice;
     totalRevenue += revenue;
 
-    const placeLabel = booking.place.marker.name || `Место #${booking.markerId}`;
+    const placeLabel =
+      booking.place.marker.name || `Место #${booking.markerId}`;
     const floorLabel = `${booking.place.floorName} (этаж ${booking.place.floorOrderNumber})`;
 
     const key = `${booking.place.floorId}:${booking.markerId}`;
@@ -147,24 +148,26 @@ export default function AdminPanelPage() {
   return (
     <>
       <Header officeName="Панель управления" />
-      <Box sx={{ display: "flex", height: "100vh", bgcolor: "#f5f7fb" }}>
+      <Box sx={{ display: 'flex', height: '100vh', bgcolor: '#f5f7fb' }}>
         <NavBar onToggleOffices={() => undefined} />
         <Box
           component="main"
           sx={{
             ml: `${drawerWidth}px`,
-            pt: "88px",
+            pt: '88px',
             px: 4,
             pb: 4,
-            width: "100%",
-            height: "100vh",
-            overflowY: "auto",
+            width: '100%',
+            height: '100vh',
+            overflowY: 'auto',
           }}
         >
-          {user?.role === "USER" && <AdminRequestSection user={user} />}
-          {user?.role === "ADMIN" && <AdminOfficesSection />}
-          {user?.role === "SUPER_ADMIN" && <SuperAdminSection />}
-          {!user?.role && <Alert severity="warning">Роль пользователя не найдена.</Alert>}
+          {user?.role === 'USER' && <AdminRequestSection user={user} />}
+          {user?.role === 'ADMIN' && <AdminOfficesSection />}
+          {user?.role === 'SUPER_ADMIN' && <SuperAdminSection />}
+          {!user?.role && (
+            <Alert severity="warning">Роль пользователя не найдена.</Alert>
+          )}
         </Box>
       </Box>
     </>
@@ -172,14 +175,16 @@ export default function AdminPanelPage() {
 }
 
 function AdminRequestSection({ user }: { user: UserInfo }) {
-  const [email, setEmail] = useState(user.email ?? "");
-  const [phone, setPhone] = useState("");
-  const [comment, setComment] = useState("");
+  const [email, setEmail] = useState(user.email ?? '');
+  const [phone, setPhone] = useState('');
+  const [comment, setComment] = useState('');
   const [requests, setRequests] = useState<AdminRequest[]>([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const pendingRequest = requests.find((request) => request.status === "PENDING");
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const pendingRequest = requests.find(
+    (request) => request.status === 'PENDING',
+  );
   const phoneIsValid =
     !phone.trim() || /^\+?[0-9][0-9\s\-()]{6,24}$/.test(phone.trim());
 
@@ -187,7 +192,7 @@ function AdminRequestSection({ user }: { user: UserInfo }) {
     try {
       setRequests(await getMyAdminRequests());
     } catch (err) {
-      setError(messageFromError(err, "Не удалось загрузить ваши заявки"));
+      setError(messageFromError(err, 'Не удалось загрузить ваши заявки'));
     }
   };
 
@@ -197,19 +202,21 @@ function AdminRequestSection({ user }: { user: UserInfo }) {
 
   const submit = async () => {
     if (!phoneIsValid) {
-      setError("Телефон должен содержать только цифры, пробелы, скобки, дефис и опциональный плюс в начале");
+      setError(
+        'Телефон должен содержать только цифры, пробелы, скобки, дефис и опциональный плюс в начале',
+      );
       return;
     }
 
     setLoading(true);
-    setError("");
-    setMessage("");
+    setError('');
+    setMessage('');
     try {
       await createAdminRequest({ email, phone, comment });
       await loadRequests();
-      setMessage("Заявка отправлена. Супер-админ увидит её в панели.");
+      setMessage('Заявка отправлена. Супер-админ увидит её в панели.');
     } catch (err) {
-      setError(messageFromError(err, "Не удалось отправить заявку"));
+      setError(messageFromError(err, 'Не удалось отправить заявку'));
     } finally {
       setLoading(false);
     }
@@ -221,7 +228,11 @@ function AdminRequestSection({ user }: { user: UserInfo }) {
         <Typography variant="h5" fontWeight={700}>
           Запросить статус администратора
         </Typography>
-        <TextField label="Email для связи" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <TextField
+          label="Email для связи"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
         <TextField
           label="Телефон"
           value={phone}
@@ -229,8 +240,8 @@ function AdminRequestSection({ user }: { user: UserInfo }) {
           error={!phoneIsValid}
           helperText={
             phoneIsValid
-              ? "Например: +7 999 000-00-00"
-              : "Телефон должен содержать только цифры и символы + - ( )"
+              ? 'Например: +7 999 000-00-00'
+              : 'Телефон должен содержать только цифры и символы + - ( )'
           }
         />
         <TextField
@@ -242,7 +253,8 @@ function AdminRequestSection({ user }: { user: UserInfo }) {
         />
         {pendingRequest && (
           <Alert severity="info">
-            У вас уже есть активная заявка. Новую можно будет отправить после отклонения текущей.
+            У вас уже есть активная заявка. Новую можно будет отправить после
+            отклонения текущей.
           </Alert>
         )}
         {message && <Alert severity="success">{message}</Alert>}
@@ -251,8 +263,10 @@ function AdminRequestSection({ user }: { user: UserInfo }) {
           variant="contained"
           startIcon={<PersonAddIcon />}
           onClick={submit}
-          disabled={loading || !email.trim() || !phoneIsValid || Boolean(pendingRequest)}
-          sx={{ alignSelf: "flex-start" }}
+          disabled={
+            loading || !email.trim() || !phoneIsValid || Boolean(pendingRequest)
+          }
+          sx={{ alignSelf: 'flex-start' }}
         >
           Отправить заявку
         </Button>
@@ -266,22 +280,24 @@ function AdminOfficesSection() {
   const [cursor, setCursor] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [bookingsTitle, setBookingsTitle] = useState("");
+  const [bookingsTitle, setBookingsTitle] = useState('');
   const [reports, setReports] = useState<Booking[]>([]);
-  const [reportsTitle, setReportsTitle] = useState("");
+  const [reportsTitle, setReportsTitle] = useState('');
 
   const loadOffices = async (nextCursor: number | null = null) => {
     setLoading(true);
-    setError("");
+    setError('');
     try {
       const data = await getMyAdminOffices({ cursor: nextCursor, size: 20 });
-      setOffices((prev) => (nextCursor ? [...prev, ...data.items] : data.items));
+      setOffices((prev) =>
+        nextCursor ? [...prev, ...data.items] : data.items,
+      );
       setCursor(data.nextCursor);
       setHasMore(data.hasMore);
     } catch (err) {
-      setError(messageFromError(err, "Не удалось загрузить офисы"));
+      setError(messageFromError(err, 'Не удалось загрузить офисы'));
     } finally {
       setLoading(false);
     }
@@ -310,19 +326,34 @@ function AdminOfficesSection() {
       <Stack spacing={1}>
         {offices.map((office) => (
           <Paper key={office.id} sx={{ p: 2, borderRadius: 1 }}>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              gap={2}
+            >
               <Box>
-                <Typography fontWeight={700}>{office.name ?? `Офис #${office.id}`}</Typography>
-                <Typography color="text.secondary">{office.address ?? "Адрес не указан"}</Typography>
+                <Typography fontWeight={700}>
+                  {office.name ?? `Офис #${office.id}`}
+                </Typography>
+                <Typography color="text.secondary">
+                  {office.address ?? 'Адрес не указан'}
+                </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Этажей: {office.floorsCount}
                 </Typography>
               </Box>
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <Button variant="outlined" onClick={() => void openOfficeBookings(office)}>
+                <Button
+                  variant="outlined"
+                  onClick={() => void openOfficeBookings(office)}
+                >
                   Аренды офиса
                 </Button>
-                <Button variant="contained" onClick={() => void openOfficeReports(office)}>
+                <Button
+                  variant="contained"
+                  onClick={() => void openOfficeReports(office)}
+                >
                   Отчёты
                 </Button>
               </Stack>
@@ -332,7 +363,11 @@ function AdminOfficesSection() {
       </Stack>
       {loading && <CircularProgress />}
       {hasMore && (
-        <Button variant="outlined" onClick={() => void loadOffices(cursor)} disabled={loading}>
+        <Button
+          variant="outlined"
+          onClick={() => void loadOffices(cursor)}
+          disabled={loading}
+        >
           Загрузить ещё
         </Button>
       )}
@@ -341,7 +376,7 @@ function AdminOfficesSection() {
         bookings={bookings}
         onClose={() => {
           setBookings([]);
-          setBookingsTitle("");
+          setBookingsTitle('');
         }}
       />
       <ReportsDialog
@@ -349,7 +384,7 @@ function AdminOfficesSection() {
         bookings={reports}
         onClose={() => {
           setReports([]);
-          setReportsTitle("");
+          setReportsTitle('');
         }}
       />
     </Stack>
@@ -357,7 +392,7 @@ function AdminOfficesSection() {
 }
 
 function SuperAdminSection() {
-  const [tab, setTab] = useState<SuperTab>("requests");
+  const [tab, setTab] = useState<SuperTab>('requests');
 
   return (
     <Stack spacing={2}>
@@ -372,32 +407,36 @@ function SuperAdminSection() {
           <Tab value="create" label="Создать админа" />
         </Tabs>
       </Paper>
-      {tab === "requests" && <RequestsTab />}
-      {tab === "users" && <UsersTab />}
-      {tab === "banned" && <BannedUsersTab />}
-      {tab === "create" && <CreateAdminTab />}
+      {tab === 'requests' && <RequestsTab />}
+      {tab === 'users' && <UsersTab />}
+      {tab === 'banned' && <BannedUsersTab />}
+      {tab === 'create' && <CreateAdminTab />}
     </Stack>
   );
 }
 
 function RequestsTab() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [items, setItems] = useState<AdminRequest[]>([]);
   const [cursor, setCursor] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   const load = async (nextCursor: number | null = null) => {
     setLoading(true);
-    setError("");
+    setError('');
     try {
-      const data = await getAdminRequests({ email, cursor: nextCursor, size: 20 });
+      const data = await getAdminRequests({
+        email,
+        cursor: nextCursor,
+        size: 20,
+      });
       setItems((prev) => (nextCursor ? [...prev, ...data.items] : data.items));
       setCursor(data.nextCursor);
       setHasMore(data.hasMore);
     } catch (err) {
-      setError(messageFromError(err, "Не удалось загрузить заявки"));
+      setError(messageFromError(err, 'Не удалось загрузить заявки'));
     } finally {
       setLoading(false);
     }
@@ -424,13 +463,16 @@ function RequestsTab() {
             <Box>
               <Typography fontWeight={700}>{request.email}</Typography>
               <Typography color="text.secondary">
-                {request.phone ?? "Телефон не указан"} · {formatDateTime(request.createdAt)}
+                {request.phone ?? 'Телефон не указан'} ·{' '}
+                {formatDateTime(request.createdAt)}
               </Typography>
-              {request.comment && <Typography sx={{ mt: 1 }}>{request.comment}</Typography>}
+              {request.comment && (
+                <Typography sx={{ mt: 1 }}>{request.comment}</Typography>
+              )}
             </Box>
             <Stack direction="row" spacing={1} alignItems="center">
               <Chip label={request.status} />
-              {request.status === "PENDING" && (
+              {request.status === 'PENDING' && (
                 <>
                   <Button
                     variant="contained"
@@ -446,7 +488,10 @@ function RequestsTab() {
                     variant="outlined"
                     color="error"
                     onClick={async () => {
-                      await rejectAdminRequest(request.id, "Отклонено супер-админом");
+                      await rejectAdminRequest(
+                        request.id,
+                        'Отклонено супер-админом',
+                      );
                       await afterAction();
                     }}
                   >
@@ -463,21 +508,21 @@ function RequestsTab() {
 }
 
 function UsersTab() {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<UserInfo["role"] | "">("");
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<UserInfo['role'] | ''>('');
   const [items, setItems] = useState<UserListItem[]>([]);
   const [cursor, setCursor] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [bookingsTitle, setBookingsTitle] = useState("");
+  const [bookingsTitle, setBookingsTitle] = useState('');
   const [offices, setOffices] = useState<AdminOffice[]>([]);
   const [confirmBlock, setConfirmBlock] = useState<UserListItem | null>(null);
 
   const load = async (nextCursor: number | null = null) => {
     setLoading(true);
-    setError("");
+    setError('');
     try {
       const data = await getUsers({
         email,
@@ -489,7 +534,7 @@ function UsersTab() {
       setCursor(data.nextCursor);
       setHasMore(data.hasMore);
     } catch (err) {
-      setError(messageFromError(err, "Не удалось загрузить пользователей"));
+      setError(messageFromError(err, 'Не удалось загрузить пользователей'));
     } finally {
       setLoading(false);
     }
@@ -523,7 +568,9 @@ function UsersTab() {
             select
             label="Роль"
             value={role}
-            onChange={(event) => setRole(event.target.value as UserInfo["role"] | "")}
+            onChange={(event) =>
+              setRole(event.target.value as UserInfo['role'] | '')
+            }
             sx={{ minWidth: 180 }}
           >
             <MenuItem value="">Все</MenuItem>
@@ -539,8 +586,12 @@ function UsersTab() {
             item={item}
             onRefresh={() => void load()}
             onBookings={() => void openBookings(item)}
-            onOffices={item.role === "ADMIN" ? () => void openOffices(item) : undefined}
-            onDanger={item.role === "ADMIN" ? () => setConfirmBlock(item) : undefined}
+            onOffices={
+              item.role === 'ADMIN' ? () => void openOffices(item) : undefined
+            }
+            onDanger={
+              item.role === 'ADMIN' ? () => setConfirmBlock(item) : undefined
+            }
           />
         ))}
       </ListShell>
@@ -549,7 +600,7 @@ function UsersTab() {
         bookings={bookings}
         onClose={() => {
           setBookings([]);
-          setBookingsTitle("");
+          setBookingsTitle('');
         }}
       />
       <OfficesDialog offices={offices} onClose={() => setOffices([])} />
@@ -568,23 +619,27 @@ function UsersTab() {
 }
 
 function BannedUsersTab() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [items, setItems] = useState<UserListItem[]>([]);
   const [cursor, setCursor] = useState<number | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   const load = async (nextCursor: number | null = null) => {
     setLoading(true);
-    setError("");
+    setError('');
     try {
-      const data = await getBannedUsers({ email, cursor: nextCursor, size: 20 });
+      const data = await getBannedUsers({
+        email,
+        cursor: nextCursor,
+        size: 20,
+      });
       setItems((prev) => (nextCursor ? [...prev, ...data.items] : data.items));
       setCursor(data.nextCursor);
       setHasMore(data.hasMore);
     } catch (err) {
-      setError(messageFromError(err, "Не удалось загрузить заблокированных"));
+      setError(messageFromError(err, 'Не удалось загрузить заблокированных'));
     } finally {
       setLoading(false);
     }
@@ -611,25 +666,25 @@ function BannedUsersTab() {
 }
 
 function CreateAdminTab() {
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [password, setPassword] = useState("string123");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('string123');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
     setLoading(true);
-    setMessage("");
-    setError("");
+    setMessage('');
+    setError('');
     try {
       await createAdmin({ email, name, password });
-      setMessage("Админ создан.");
-      setEmail("");
-      setName("");
-      setPassword("string123");
+      setMessage('Админ создан.');
+      setEmail('');
+      setName('');
+      setPassword('string123');
     } catch (err) {
-      setError(messageFromError(err, "Не удалось создать админа"));
+      setError(messageFromError(err, 'Не удалось создать админа'));
     } finally {
       setLoading(false);
     }
@@ -638,8 +693,16 @@ function CreateAdminTab() {
   return (
     <Paper sx={{ p: 3, borderRadius: 1, maxWidth: 720 }}>
       <Stack spacing={2}>
-        <TextField label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <TextField label="Имя" value={name} onChange={(e) => setName(e.target.value)} />
+        <TextField
+          label="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <TextField
+          label="Имя"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
         <TextField
           label="Пароль"
           value={password}
@@ -652,7 +715,7 @@ function CreateAdminTab() {
           startIcon={<PersonAddIcon />}
           onClick={submit}
           disabled={loading || !email || !name || password.length < 8}
-          sx={{ alignSelf: "flex-start" }}
+          sx={{ alignSelf: 'flex-start' }}
         >
           Создать админа
         </Button>
@@ -720,16 +783,16 @@ function UserRow({
 
   const toggleBlock = async () => {
     if (isBanned) {
-      if (item.role === "ADMIN") {
+      if (item.role === 'ADMIN') {
         await unblockAdminWithOffices(item.id);
       } else {
         await unblockUser(item.id);
       }
-    } else if (item.role === "ADMIN" && onDanger) {
+    } else if (item.role === 'ADMIN' && onDanger) {
       onDanger();
       return;
     } else {
-      await blockUser(item.id, "Заблокировано супер-админом");
+      await blockUser(item.id, 'Заблокировано супер-админом');
     }
     onRefresh();
   };
@@ -744,21 +807,21 @@ function UserRow({
           </Typography>
           {isBanned && (
             <Typography variant="body2" color="error">
-              Заблокирован: {item.bannedReason ?? "без причины"}
+              Заблокирован: {item.bannedReason ?? 'без причины'}
             </Typography>
           )}
         </Box>
         <Stack direction="row" spacing={1} alignItems="center">
           {onBookings && <Button onClick={onBookings}>Аренды</Button>}
           {onOffices && <Button onClick={onOffices}>Офисы</Button>}
-          {item.role !== "SUPER_ADMIN" && (
+          {item.role !== 'SUPER_ADMIN' && (
             <Button
               variant="outlined"
-              color={isBanned ? "success" : "error"}
+              color={isBanned ? 'success' : 'error'}
               startIcon={isBanned ? <RestoreIcon /> : <BlockIcon />}
               onClick={() => void toggleBlock()}
             >
-              {isBanned ? "Разблокировать" : "Заблокировать"}
+              {isBanned ? 'Разблокировать' : 'Заблокировать'}
             </Button>
           )}
         </Stack>
@@ -787,17 +850,16 @@ function BookingsDialog({
                 Место #{booking.markerId} · {booking.status}
               </Typography>
               <Typography color="text.secondary">
-                {booking.place.officeName ?? "Офис"} · {booking.place.floorName}
+                {booking.place.officeName ?? 'Офис'} · {booking.place.floorName}
               </Typography>
               <Typography>
-                {formatDateTime(booking.startTime)} - {formatDateTime(booking.endTime)}
+                {formatDateTime(booking.startTime)} -{' '}
+                {formatDateTime(booking.endTime)}
               </Typography>
             </Paper>
           ))}
           {bookings.length === 0 && (
-            <Typography color="text.secondary">
-              Аренд пока нет.
-            </Typography>
+            <Typography color="text.secondary">Аренд пока нет.</Typography>
           )}
         </Stack>
       </DialogContent>
@@ -817,7 +879,7 @@ function ReportsDialog({
   bookings: Booking[];
   onClose: () => void;
 }) {
-  const [tab, setTab] = useState<ReportTab>("places");
+  const [tab, setTab] = useState<ReportTab>('places');
   const report = buildOfficeReport(bookings);
 
   return (
@@ -825,12 +887,13 @@ function ReportsDialog({
       <DialogTitle>Отчёты: {title}</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2}>
-          <Paper sx={{ p: 2, borderRadius: 1, bgcolor: "grey.50" }}>
+          <Paper sx={{ p: 2, borderRadius: 1, bgcolor: 'grey.50' }}>
             <Typography variant="subtitle1" fontWeight={700} gutterBottom>
               Отчёт по офису
             </Typography>
             <Typography color="text.secondary" variant="body2">
-              Вкладки показывают три варианта отчёта: по местам на этажах, по этажам и общий итог по офису.
+              Вкладки показывают три варианта отчёта: по местам на этажах, по
+              этажам и общий итог по офису.
             </Typography>
           </Paper>
 
@@ -842,21 +905,44 @@ function ReportsDialog({
             </Tabs>
           </Paper>
 
-          {tab === "places" && (
+          {tab === 'places' && (
             <Stack spacing={1}>
               {report.placeRows.length === 0 && (
-                <Typography color="text.secondary">Нет данных по арендам.</Typography>
+                <Typography color="text.secondary">
+                  Нет данных по арендам.
+                </Typography>
               )}
               {report.placeRows.map((item) => (
-                <Paper key={`${item.floor}-${item.label}`} sx={{ p: 2, borderRadius: 1 }}>
-                  <Stack direction="row" justifyContent="space-between" gap={2} flexWrap="wrap">
+                <Paper
+                  key={`${item.floor}-${item.label}`}
+                  sx={{ p: 2, borderRadius: 1 }}
+                >
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    gap={2}
+                    flexWrap="wrap"
+                  >
                     <Box>
                       <Typography fontWeight={700}>{item.label}</Typography>
-                      <Typography color="text.secondary">{item.floor}</Typography>
+                      <Typography color="text.secondary">
+                        {item.floor}
+                      </Typography>
                     </Box>
-                    <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-                      <Chip label={`Бронирований: ${item.count}`} color="primary" />
-                      <Chip label={`Выручка: ${formatCurrency(item.revenue)}`} color="success" />
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      flexWrap="wrap"
+                      useFlexGap
+                    >
+                      <Chip
+                        label={`Бронирований: ${item.count}`}
+                        color="primary"
+                      />
+                      <Chip
+                        label={`Выручка: ${formatCurrency(item.revenue)}`}
+                        color="success"
+                      />
                     </Stack>
                   </Stack>
                 </Paper>
@@ -864,23 +950,41 @@ function ReportsDialog({
             </Stack>
           )}
 
-          {tab === "floors" && (
+          {tab === 'floors' && (
             <Stack spacing={1}>
               {report.floorRows.length === 0 && (
-                <Typography color="text.secondary">Нет данных по этажам.</Typography>
+                <Typography color="text.secondary">
+                  Нет данных по этажам.
+                </Typography>
               )}
               {report.floorRows.map((item) => (
                 <Paper key={item.floor} sx={{ p: 2, borderRadius: 1 }}>
-                  <Stack direction="row" justifyContent="space-between" gap={2} flexWrap="wrap">
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    gap={2}
+                    flexWrap="wrap"
+                  >
                     <Box>
                       <Typography fontWeight={700}>{item.floor}</Typography>
                       <Typography color="text.secondary">
                         Уникальных мест: {item.markers.size}
                       </Typography>
                     </Box>
-                    <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-                      <Chip label={`Бронирований: ${item.count}`} color="primary" />
-                      <Chip label={`Выручка: ${formatCurrency(item.revenue)}`} color="success" />
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      flexWrap="wrap"
+                      useFlexGap
+                    >
+                      <Chip
+                        label={`Бронирований: ${item.count}`}
+                        color="primary"
+                      />
+                      <Chip
+                        label={`Выручка: ${formatCurrency(item.revenue)}`}
+                        color="success"
+                      />
                     </Stack>
                   </Stack>
                 </Paper>
@@ -888,22 +992,39 @@ function ReportsDialog({
             </Stack>
           )}
 
-          {tab === "office" && (
+          {tab === 'office' && (
             <Stack spacing={1.5}>
               <Paper sx={{ p: 2, borderRadius: 1 }}>
                 <Typography variant="subtitle1" fontWeight={700} gutterBottom>
                   Общий итог по офису
                 </Typography>
                 <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-                  <Chip label={`Бронирований: ${report.totalBookings}`} color="primary" />
-                  <Chip label={`Уникальных мест: ${report.uniquePlaces}`} color="info" />
-                  <Chip label={`Этажей: ${report.uniqueFloors}`} color="secondary" />
-                  <Chip label={`Выручка: ${formatCurrency(report.totalRevenue)}`} color="success" />
-                  <Chip label={`Часов аренды: ${report.totalHours.toFixed(1)}`} color="warning" />
+                  <Chip
+                    label={`Бронирований: ${report.totalBookings}`}
+                    color="primary"
+                  />
+                  <Chip
+                    label={`Уникальных мест: ${report.uniquePlaces}`}
+                    color="info"
+                  />
+                  <Chip
+                    label={`Этажей: ${report.uniqueFloors}`}
+                    color="secondary"
+                  />
+                  <Chip
+                    label={`Выручка: ${formatCurrency(report.totalRevenue)}`}
+                    color="success"
+                  />
+                  <Chip
+                    label={`Часов аренды: ${report.totalHours.toFixed(1)}`}
+                    color="warning"
+                  />
                 </Stack>
               </Paper>
               <Typography color="text.secondary" variant="body2">
-                Это краткий общий отчёт по арендам для текущего офиса. Данные формируются из уже существующих броней и доступны только в админском кабинете.
+                Это краткий общий отчёт по арендам для текущего офиса. Данные
+                формируются из уже существующих броней и доступны только в
+                админском кабинете.
               </Typography>
             </Stack>
           )}
@@ -932,12 +1053,16 @@ function OfficesDialog({
             <Paper key={office.id} sx={{ p: 2, borderRadius: 1 }}>
               <Stack direction="row" justifyContent="space-between">
                 <Box>
-                  <Typography fontWeight={700}>{office.name ?? `Офис #${office.id}`}</Typography>
-                  <Typography color="text.secondary">{office.address ?? "Адрес не указан"}</Typography>
+                  <Typography fontWeight={700}>
+                    {office.name ?? `Офис #${office.id}`}
+                  </Typography>
+                  <Typography color="text.secondary">
+                    {office.address ?? 'Адрес не указан'}
+                  </Typography>
                 </Box>
                 <Chip
-                  color={office.deletedAt ? "warning" : "success"}
-                  label={office.deletedAt ? "Скрыт" : "Активен"}
+                  color={office.deletedAt ? 'warning' : 'success'}
+                  label={office.deletedAt ? 'Скрыт' : 'Активен'}
                 />
               </Stack>
             </Paper>
@@ -960,7 +1085,7 @@ function ConfirmBlockDialog({
   onClose: () => void;
   onConfirm: (reason: string) => Promise<void>;
 }) {
-  const [reason, setReason] = useState("Нарушение правил сервиса");
+  const [reason, setReason] = useState('Нарушение правил сервиса');
 
   return (
     <Dialog open={Boolean(user)} onClose={onClose} fullWidth maxWidth="sm">
@@ -968,7 +1093,8 @@ function ConfirmBlockDialog({
       <DialogContent dividers>
         <Stack spacing={2}>
           <Alert severity="warning">
-            Офисы админа будут скрыты через soft-delete. Их можно восстановить при разблокировке.
+            Офисы админа будут скрыты через soft-delete. Их можно восстановить
+            при разблокировке.
           </Alert>
           <Typography>{user?.email}</Typography>
           <TextField
@@ -986,7 +1112,11 @@ function ConfirmBlockDialog({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Отмена</Button>
-        <Button color="error" variant="contained" onClick={() => void onConfirm(reason)}>
+        <Button
+          color="error"
+          variant="contained"
+          onClick={() => void onConfirm(reason)}
+        >
           Заблокировать
         </Button>
       </DialogActions>
