@@ -249,7 +249,7 @@ export default function RedactorMenu({
             />
           )}
 
-          <Box>
+          {/* <Box>
             <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
               <Typography fontWeight={700}>Галерея маркера</Typography>
               <Button
@@ -299,7 +299,7 @@ export default function RedactorMenu({
                 Фотографий пока нет.
               </Typography>
             )}
-          </Box>
+          </Box> */}
         </Stack>
       </DialogContent>
       <DialogActions>
