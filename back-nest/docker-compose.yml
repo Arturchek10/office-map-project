@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: office_map_postgres
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: map_service
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - office_map_pgdata:/var/lib/postgresql/data
+
+volumes:
+  office_map_pgdata:

@@ -1,0 +1,129 @@
+import { createStore, createEffect } from "effector";
+import { TOffice } from "@entities/Office/type/office";
+import { addOfficeFx, updateOfficeFx } from "./AddOffice";
+import { deleteOfficeFx } from "./DeleteOffice";
+import { getMyAdminOffices } from "@shared/api/Admin";
+import { $user } from "@shared/store/auth";
+import type { AdminOffice } from "@shared/types/admin";
+import { apiGet } from "@shared/utils/api";
+
+const toOfficeListItem = (office: AdminOffice): TOffice => ({
+  id: office.id,
+  name: office.name ?? "",
+  latitude: office.latitude ?? 0,
+  longitude: office.longitude ?? 0,
+  photoUrl: office.photoUrl,
+  city: office.city ?? "",
+  address: office.address ?? "",
+  createdByUserId: office.createdByUserId,
+  floorsCount: office.floorsCount,
+});
+
+const fetchAllMyAdminOffices = async (): Promise<TOffice[]> => {
+  const offices: TOffice[] = [];
+  let cursor: number | null = null;
+  let hasMore = true;
+
+  while (hasMore) {
+    const data = await getMyAdminOffices({ cursor, size: 100 });
+    offices.push(...data.items.map(toOfficeListItem));
+    cursor = data.nextCursor;
+    hasMore = data.hasMore && cursor !== null;
+  }
+
+  return offices;
+};
+
+export const fetchOfficesFx = createEffect<void, TOffice[], Error>(async () => {
+  if ($user.getState()?.role === "ADMIN") {
+    return fetchAllMyAdminOffices();
+  }
+
+  // мок
+  const USE_MOCK = false;
+  if (USE_MOCK) {
+    return [
+      {
+        id: 1,
+        name: "Headquarters",
+        latitude: 52.3676,
+        longitude: 4.9041,
+        photoUrl: "https://picsum.photos/400/300?random=1",
+        city: "Amsterdam",
+        address: "Herengracht 123",
+      },
+      {
+        id: 2,
+        name: "Tech Hub",
+        latitude: 52.52,
+        longitude: 13.405,
+        photoUrl: "https://picsum.photos/400/300?random=2",
+        city: "Berlin",
+        address: "Alexanderplatz 5",
+      },
+      {
+        id: 3,
+        name: "Business Center",
+        latitude: 48.8566,
+        longitude: 2.3522,
+        photoUrl: "https://picsum.photos/400/300?random=3",
+        city: "Paris",
+        address: "Rue de Rivoli 10",
+      },
+      {
+        id: 4,
+        name: "Innovation Lab",
+        latitude: 51.5074,
+        longitude: -0.1278,
+        photoUrl: "https://picsum.photos/400/300?random=4",
+        city: "London",
+        address: "Baker Street 221B",
+      },
+    ] as TOffice[];
+  }
+
+  const res = await apiGet("/api/v1/offices");
+
+  const contentType = res.headers.get("content-type") || "";
+
+  if (!res.ok) {
+    let errorMessage = `Ошибка ${res.status}`;
+
+    if (contentType.includes("application/json")) {
+      const errorData = await res.json();
+      errorMessage = errorData.message || errorMessage;
+    } else {
+      const textData = await res.text();
+      if (textData) errorMessage = textData;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  if (!contentType.includes("application/json")) {
+    throw new Error("Ответ сервера не в формате JSON");
+  }
+
+  return await res.json();
+});
+
+export const $offices = createStore<TOffice[]>([])
+  .on(fetchOfficesFx.doneData, (_, offices) => offices)
+  .on(addOfficeFx.doneData, (state, newOffice) => [...state, newOffice])
+  .on(updateOfficeFx.doneData, (state, updatedOffice) =>
+    state.map((office) => (office.id === updatedOffice.id ? updatedOffice : office)),
+  )
+  .on(deleteOfficeFx.doneData, (state, deletedOfficeId) =>
+    state.filter((office) => office.id !== deletedOfficeId),
+  );
+
+export const $officesLoading = fetchOfficesFx.pending;
+export const $officesError = createStore<Error | null>(null)
+  .on(fetchOfficesFx.failData, (_, e) => e)
+  .on(fetchOfficesFx.done, () => null)
+  .on(deleteOfficeFx.failData, (_, e) => e)
+  .on(deleteOfficeFx.done, () => null);
+
+// При клике на Оффис мы должны переходить на новый сайт и запрашивать
+// api/v1/offices/{id}
+// Если этажей нету то рисуем

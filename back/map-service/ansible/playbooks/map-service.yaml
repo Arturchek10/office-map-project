@@ -1,6 +1,0 @@
-- name: Deploy map-service
-  hosts: map-service
-  roles:
-    - name: map-service_install
-      role: ../../roles/map-service_install
-  
